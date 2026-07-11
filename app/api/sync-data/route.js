@@ -23,6 +23,13 @@ export async function POST(request) {
     const body = await request.json();
     const { type, data } = body || {};
 
+    console.log("[sync-data] Nhận request:", {
+      type,
+      dataType: typeof data,
+      isArray: Array.isArray(data),
+      keyCount: data && typeof data === "object" ? Object.keys(data).length : 0,
+    });
+
     if (!["donhang", "vitien", "danhan"].includes(type)) {
       return NextResponse.json(
         { error: "type phải là donhang, vitien hoặc danhan." },
