@@ -15,8 +15,8 @@ export async function POST(request) {
       return NextResponse.json({ error: "Vui lòng nhập link Shopee." }, { status: 400 });
     }
 
-    const convertedUrl = convertShopeeLink(shopeeUrl, currentUser.myId);
-    return NextResponse.json({ convertedUrl });
+    const result = await convertShopeeLink(shopeeUrl, currentUser.myId);
+    return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(
       { error: err.message || "Không thể chuyển link này." },
