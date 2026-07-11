@@ -29,6 +29,7 @@ export default function DashboardClient({ user, initialOrders }) {
   const [orders] = useState(initialOrders);
   const [shopeeUrl, setShopeeUrl] = useState("");
   const [convertedUrl, setConvertedUrl] = useState("");
+  const [productInfo, setProductInfo] = useState(null);
   const [convertError, setConvertError] = useState("");
   const [converting, setConverting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -48,6 +49,7 @@ export default function DashboardClient({ user, initialOrders }) {
     e.preventDefault();
     setConvertError("");
     setConvertedUrl("");
+    setProductInfo(null);
     setCopied(false);
     setConverting(true);
     try {
@@ -61,6 +63,12 @@ export default function DashboardClient({ user, initialOrders }) {
         setConvertError(data.error || "Không thể chuyển link này.");
       } else {
         setConvertedUrl(data.convertedUrl);
+        setProductInfo({
+          productName: data.productName,
+          commissionStr: data.commissionStr,
+          commissionPct: data.commissionPct,
+          image: data.image,
+        });
       }
     } catch {
       setConvertError("Không thể kết nối máy chủ.");
@@ -167,6 +175,38 @@ export default function DashboardClient({ user, initialOrders }) {
 
             {convertedUrl && (
               <div className="mt-5 bg-surface border border-border rounded-lg p-4">
+                {productInfo && (productInfo.image || productInfo.productName) && (
+                  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border/60">
+                    {productInfo.image ? (
+                      <img
+                        src={productInfo.image}
+                        alt={productInfo.productName || "Sản phẩm Shopee"}
+                        className="w-14 h-14 rounded-lg object-cover border border-border shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-lg bg-panel-2 border border-border shrink-0 flex items-center justify-center text-muted text-xs">
+                        Không ảnh
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      {productInfo.productName && (
+                        <p className="text-sm font-medium truncate">
+                          {productInfo.productName}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted mt-0.5">
+                        Hoa hồng:{" "}
+                        <span className="text-gold font-mono-num">
+                          {productInfo.commissionStr}
+                        </span>{" "}
+                        ({productInfo.commissionPct})
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <p className="text-xs text-muted mb-2">Link hoàn tiền của bạn</p>
                 <div className="font-mono-num text-xs sm:text-sm text-mint bg-ink/40 rounded-md px-3 py-2.5 overflow-x-auto scrollbar-thin whitespace-nowrap">
                   {convertedUrl}
