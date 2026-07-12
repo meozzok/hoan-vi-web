@@ -13,83 +13,54 @@ export async function POST(request) {
     const nickname = (body.nickname || "").trim();
     const myId = (body.myId || "").trim();
 
-    if (!nickname && !myId) {
+    // My ID (dãy số bot cấp) giờ là BẮT BUỘC cho mọi lượt đăng nhập — không
+    // còn cho phép đăng nhập chỉ bằng tên gợi nhớ, để tránh nhầm lẫn giữa các
+    // khách trùng tên.
+    if (!myId) {
       return NextResponse.json(
-        { error: "Vui lòng nhập Tên gợi nhớ hoặc My ID." },
+        { error: "Vui lòng nhập My ID (dãy số bot cấp) để đăng nhập." },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidMyId(myId)) {
+      return NextResponse.json(
+        { error: "My ID không hợp lệ. My ID chỉ gồm các chữ số do bot cấp." },
         { status: 400 }
       );
     }
 
     const supabase = getSupabaseAdmin();
-    let user;
 
-    if (myId) {
-      // Đăng nhập / tự tạo tài khoản bằng My ID.
-      if (!isValidMyId(myId)) {
-        return NextResponse.json(
-          { error: "My ID không hợp lệ. My ID chỉ gồm các chữ số do bot cấp." },
-          { status: 400 }
-        );
-      }
+    // Dùng upsert (INSERT ... ON CONFLICT) để gộp "tìm + tạo/ghi đè" thành
+    // MỘT round-trip duy nhất tới Supabase thay vì 2 round-trip (select rồi
+    // update/insert riêng) như trước — đây là điểm chính giúp đăng nhập
+    // nhanh hơn rõ rệt.
+    const { data: upserted, error: upsertError } = await supabase
+      .from("users")
+      .upsert(
+        {
+          my_id: myId,
+          // Chỉ ghi đè tên gợi nhớ khi khách CÓ nhập tên mới ở lượt này —
+          // nếu bỏ trống, giữ nguyên tên gợi nhớ khách đã đặt trước đó
+          // (nhờ không đưa field này vào payload, cột display_name không bị
+          // ON CONFLICT UPDATE đụng tới).
+          ...(nickname ? { display_name: nickname } : {}),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "my_id" }
+      )
+      .select("my_id, display_name")
+      .single();
 
-      // Dùng upsert (INSERT ... ON CONFLICT) để gộp "tìm + tạo/ghi đè" thành
-      // MỘT round-trip duy nhất tới Supabase thay vì 2 round-trip (select rồi
-      // update/insert riêng) như trước — đây là điểm chính giúp đăng nhập
-      // nhanh hơn rõ rệt.
-      const { data: upserted, error: upsertError } = await supabase
-        .from("users")
-        .upsert(
-          {
-            my_id: myId,
-            ...(nickname ? { display_name: nickname } : {}),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "my_id" }
-        )
-        .select("my_id, display_name")
-        .single();
+    if (upsertError) throw upsertError;
 
-      if (upsertError) throw upsertError;
-
-      user = {
-        my_id: upserted.my_id,
-        display_name: upserted.display_name || nickname || upserted.my_id,
-      };
-    } else {
-      // Chỉ có tên gợi nhớ (đăng nhập lại không cần lấy lại My ID) —
-      // tìm tài khoản có tên gợi nhớ này, ưu tiên tài khoản đăng nhập gần nhất.
-      const { data: matches, error: findError } = await supabase
-        .from("users")
-        .select("my_id, display_name")
-        .eq("display_name", nickname)
-        .order("updated_at", { ascending: false })
-        .limit(1);
-
-      if (findError) throw findError;
-
-      if (!matches || matches.length === 0) {
-        return NextResponse.json(
-          {
-            error:
-              "Không tìm thấy tên gợi nhớ này. Vui lòng đăng nhập bằng My ID để bắt đầu.",
-          },
-          { status: 404 }
-        );
-      }
-
-      user = matches[0];
-
-      // Cập nhật "updated_at" chỉ phục vụ thống kê, KHÔNG ảnh hưởng tới việc
-      // đăng nhập thành công hay không → không await, trả kết quả cho người
-      // dùng ngay để đăng nhập nhanh hơn.
-      supabase
-        .from("users")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("my_id", user.my_id)
-        .then(({ error: touchError }) => {
-          if (touchError) console.error("touch updated_at lỗi:", touchError);
-        });
-    }
+    // Tài khoản mới toanh, chưa từng đặt tên gợi nhớ và lần này cũng không
+    // nhập tên → hiển thị tạm "Anh / Chị" thay vì để trống hay hiện My ID.
+    const user = {
+      my_id: upserted.my_id,
+      display_name: upserted.display_name || "Anh / Chị",
+    };
 
     const token = await createSessionToken({
       myId: user.my_id,
