@@ -537,15 +537,16 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               <>
                 {/* Dạng thẻ - dùng trên điện thoại */}
                 <div className="sm:hidden divide-y divide-border/60 border-t border-border">
-                  {pagedOrders.map((order) => {
+                  {pagedOrders.map((order, i) => {
                     const meta = statusMeta(order.status);
                     const { gross, afterTax, final80 } = commissionBreakdown(order.commission);
+                    const orderNumber = String((orderPage - 1) * PAGE_SIZE + i + 1).padStart(2, "0");
                     return (
                       <div key={order.id} className="px-5 py-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="text-sm font-medium line-clamp-2">
-                              {truncateChars(order.productName, 60)}
+                              {orderNumber}.🛍️ {truncateChars(order.productName, 60)}
                             </p>
                             <div className="flex items-center gap-1 mt-0.5">
                               <p className="font-mono-num text-xs text-muted">{order.id || "—"}</p>
@@ -618,9 +619,10 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                       </tr>
                     </thead>
                     <tbody>
-                      {pagedOrders.map((order) => {
+                      {pagedOrders.map((order, i) => {
                         const meta = statusMeta(order.status);
                         const { gross, afterTax, final80 } = commissionBreakdown(order.commission);
+                        const orderNumber = String((orderPage - 1) * PAGE_SIZE + i + 1).padStart(2, "0");
                         return (
                           <tr key={order.id} className="border-t border-border/60">
                             <td className="px-7 py-3.5 font-mono-num text-xs text-muted">
@@ -628,7 +630,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             </td>
                             <td className="px-4 py-3.5">
                               <span className="line-clamp-2 max-w-[280px] inline-block align-top">
-                                {truncateChars(order.productName, 60)}
+                                {orderNumber}.🛍️ {truncateChars(order.productName, 60)}
                               </span>
                             </td>
                             <td className="px-4 py-3.5 text-right font-mono-num font-semibold" style={{ color: AMOUNT_COLORS.gross }}>
