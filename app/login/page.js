@@ -95,8 +95,8 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    if (!nickname.trim() && !myId.trim()) {
-      setError("Vui lòng nhập Tên gợi nhớ hoặc My ID.");
+    if (!myId.trim()) {
+      setError("Vui lòng nhập My ID (dãy số bot cấp) để đăng nhập.");
       return;
     }
 
@@ -153,20 +153,44 @@ export default function LoginPage() {
               Mua sắm hoàn tiền cùng Phương Thảo
             </span>
           </div>
-          <p className="text-muted text-sm">Shop càng nhiều hoàn càng đã 🐾</p>
+          <p className="text-muted text-sm mb-3">Shop càng nhiều hoàn càng đã 🐾</p>
+
+          {/* Badge trang trí pastel cho sinh động */}
+          <div className="flex items-center justify-center flex-wrap gap-2">
+            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full text-[#6a4c93] bg-[#c9a6f2]/30 border border-[#c9a6f2]/40">
+              💜 Hoàn tiền cao
+            </span>
+            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full text-[#2a6f96] bg-[#9fd0f0]/30 border border-[#9fd0f0]/40">
+              💙 Ghi nhận nhanh
+            </span>
+            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full text-[#8a6d1f] bg-[#f5e08c]/40 border border-[#f5e08c]/50">
+              💛 Uy tín
+            </span>
+            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full text-[#a5484f] bg-[#f3a6ab]/30 border border-[#f3a6ab]/40">
+              ❤️ Chăm sóc tận tâm
+            </span>
+          </div>
         </div>
 
         {/* Thẻ thành viên */}
         <div className="ticket-notch bg-panel rounded-2xl border border-border shadow-2xl shadow-black/10 overflow-hidden">
           <div className="p-6 sm:p-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-2">
               <div className="w-10 h-7 rounded-md bg-gradient-to-br from-gold-soft to-gold flex items-center justify-center">
                 <CuteCatIcon className="w-4 h-4 text-white/90" />
               </div>
-              <span className="font-mono-num text-xs text-muted uppercase tracking-widest">
-                Member ID
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#c9a6f2]" />
+                <span className="w-2 h-2 rounded-full bg-[#9fd0f0]" />
+                <span className="w-2 h-2 rounded-full bg-[#f5e08c]" />
+                <span className="w-2 h-2 rounded-full bg-[#f3a6ab]" />
+              </div>
             </div>
+
+            {/* Lời chào — đổi ngay theo Tên gợi nhớ khách nhập */}
+            <p className="text-center font-display font-bold text-xl mb-5 text-highlight transition-all">
+              Hello {nickname.trim() ? nickname.trim() : "Anh / Chị"} 👋
+            </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Tên gợi nhớ */}
@@ -182,51 +206,46 @@ export default function LoginPage() {
                   placeholder="Đặt tên gì cũng được, vd: Thảo Shopee"
                   className="field-important w-full bg-surface border-2 border-highlight/40 rounded-xl px-3.5 py-2.5 text-base sm:text-sm outline-none focus:border-highlight transition-colors placeholder:text-muted/60"
                 />
-                <p className="text-[11px] text-highlight/90 mt-1.5 leading-snug flex items-start gap-1">
-                  <span>💗</span>
-                  <span>
-                    Lưu ý: Nhập đúng My ID bot gửi cho bạn trong nhóm Zalo để ghi nhận đơn hàng
-                    và ví tiền.
-                  </span>
-                </p>
               </div>
 
               {/* Cách lấy My ID — chuyển lên trên, trước ô nhập My ID */}
-              <div className="text-[11px] text-muted leading-snug space-y-2 bg-surface/60 border border-border rounded-xl px-3.5 py-3">
+              <div className="text-[11px] text-muted leading-snug space-y-2.5 bg-surface/60 border border-border rounded-xl px-3.5 py-3">
                 <p className="font-semibold text-highlight flex items-center gap-1.5 text-xs">
                   <CuteCatIcon className="w-4 h-4 text-highlight" />
                   Cách lấy My ID:
                 </p>
                 <p className="flex flex-wrap items-center gap-1.5">
-                  <span className="font-semibold">Bước 1:</span> Sao chép câu lệnh
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#c9a6f2] text-white text-[9px] font-bold shrink-0">1</span>
+                  <span className="font-semibold">Sao chép câu lệnh</span>
                   <span className="inline-flex items-center gap-1 font-mono-num bg-highlight/15 text-highlight px-1.5 py-0.5 rounded-md">
                     {MYID_COMMAND}
                     <button
                       type="button"
                       onClick={copyCommand}
                       aria-label="Sao chép câu lệnh My ID"
-                      className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-md bg-highlight text-white hover:bg-[var(--gold-soft)] active:scale-90 transition-all cursor-pointer"
+                      className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-md bg-[#f3a6ab] text-white hover:brightness-95 active:scale-90 transition-all cursor-pointer"
                     >
                       {copied ? "✓" : <CopyIcon className="w-3 h-3" />}
                     </button>
                   </span>
                   {copied && <span className="text-highlight font-semibold">Đã sao chép!</span>}
                 </p>
-                <p>
-                  <span className="font-semibold">Bước 2:</span> Gửi vào nhóm để lấy My ID{" "}
+                <p className="flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#9fd0f0] text-white text-[9px] font-bold shrink-0">2</span>
+                  <span className="font-semibold">Gửi vào nhóm để lấy My ID</span>
                   <a
                     href={ZALO_GROUP_LINK}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setGroupLinkOpened(true)}
-                    className="inline-flex items-center gap-1 bg-highlight hover:bg-[var(--gold-soft)] text-white font-semibold px-2.5 py-1 rounded-full ml-1 shadow-sm shadow-[var(--highlight)]/30 active:scale-95 transition-all"
+                    className="inline-flex items-center gap-1 bg-highlight hover:bg-[var(--gold-soft)] text-white font-semibold px-2.5 py-1 rounded-full shadow-sm shadow-[var(--highlight)]/30 active:scale-95 transition-all"
                   >
                     👉 Gửi Ngay
                   </a>
                 </p>
-                <p>
-                  <span className="font-semibold">Bước 3:</span> Sao chép ID bot gửi cho bạn và
-                  điền vào ô My ID bên dưới.
+                <p className="flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#f5e08c] text-white text-[9px] font-bold shrink-0">3</span>
+                  <span className="font-semibold">Sao chép ID bot gửi cho bạn và điền vào ô My ID.</span>
                 </p>
               </div>
 
@@ -248,11 +267,13 @@ export default function LoginPage() {
                       : "bg-surface/70 border-border opacity-60 focus:border-highlight focus:opacity-100"
                   }`}
                 />
-                {!groupLinkOpened && (
-                  <p className="text-[11px] text-muted mt-1.5 flex items-center gap-1">
-                    <span>💡</span> Bấm “👉 Gửi Ngay” ở Bước 2 để nhóm gửi My ID cho bạn nhé.
-                  </p>
-                )}
+                <p className="text-[11px] text-highlight/90 mt-1.5 leading-snug flex items-start gap-1">
+                  <span>💗</span>
+                  <span>
+                    Lưu ý: Nhập đúng My ID bot gửi cho bạn trong nhóm Zalo để ghi nhận đơn hàng
+                    và ví tiền.
+                  </span>
+                </p>
               </div>
 
               {error && (
@@ -291,7 +312,6 @@ export default function LoginPage() {
             <p className="font-display font-bold text-lg mt-4 text-highlight">
               Đăng nhập thành công!
             </p>
-            <p className="text-muted text-xs mt-1">Đang đưa bạn vào ví tiền... 🐾</p>
           </div>
         </div>
       )}
