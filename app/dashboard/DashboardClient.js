@@ -29,7 +29,7 @@ function statusMeta(trangThai) {
 const ORDER_FILTERS = [
   { id: "all", label: "Tất cả" },
   { id: "completed", label: "Hoàn thành" },
-  { id: "pending", label: "Đang chờ xử lý" },
+  { id: "pending", label: "Chờ xử lý" },
   { id: "cancelled", label: "Đã hủy" },
 ];
 
@@ -97,6 +97,12 @@ function CopyIcon({ className = "" }) {
 
 function formatVnd(amount) {
   return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(amount || 0) + "đ";
+}
+
+function truncateChars(str, limit = 60) {
+  const s = String(str || "");
+  if (s.length <= limit) return s;
+  return s.slice(0, limit).trim() + "...";
 }
 
 function formatDate(value) {
@@ -407,13 +413,13 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     )}
                     <div className="min-w-0">
                       {productInfo.productName && (
-                        <p className="text-sm font-medium truncate">
-                          {productInfo.productName}
+                        <p className="text-sm font-medium">
+                          {truncateChars(productInfo.productName, 60)}
                         </p>
                       )}
-                      <p className="text-xs text-muted mt-0.5">
-                        Hoa hồng ước tính:{" "}
-                        <span className="text-gold font-mono-num">
+                      <p className="text-xs mt-0.5">
+                        <span className="text-danger">Hoa hồng ước tính:</span>{" "}
+                        <span className="text-[#1a7a3d] font-bold font-mono-num">
                           {productInfo.commissionStr}
                         </span>
                       </p>
@@ -428,7 +434,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     href={convertedUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 text-center bg-[#7fc99a] hover:bg-[#6fbb8b] text-white text-sm font-bold rounded-lg px-3.5 py-3 shadow-md shadow-[#7fc99a]/30 transition-all active:scale-[0.98] cursor-pointer"
+                    className="flex-1 text-center bg-[#16c261] hover:bg-[#12a852] text-white text-sm font-bold rounded-lg px-3.5 py-3 shadow-md shadow-[#16c261]/40 transition-all active:scale-[0.98] cursor-pointer animate-pulse"
                   >
                     🛍️ Mua Ngay
                   </a>
@@ -442,11 +448,11 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
                 <div className="mt-4 bg-surface/70 border border-border rounded-lg px-4 py-3.5 space-y-1.5">
                   <p className="text-xs font-semibold text-highlight mb-1">Lưu ý để đơn được ghi nhận:</p>
-                  <p className="text-xs text-muted">1. Xóa sản phẩm này khỏi giỏ hàng (nếu có) ✅</p>
-                  <p className="text-xs text-muted">2. Bấm link bỏ giỏ hoặc mua ngay ✅</p>
-                  <p className="text-xs text-muted">3. Thao tác chậm lại để Shopee ghi nhận đơn ✅</p>
-                  <p className="text-xs text-muted">4. Không xem live trước hoặc sau khi bấm link ✅</p>
-                  <p className="text-xs text-muted">
+                  <p className="text-[11px] text-muted">1. Xóa sản phẩm này khỏi giỏ hàng (nếu có) ✅</p>
+                  <p className="text-[11px] text-muted">2. Bấm link bỏ giỏ hoặc mua ngay ✅</p>
+                  <p className="text-[11px] text-muted">3. Thao tác chậm lại để Shopee ghi nhận đơn ✅</p>
+                  <p className="text-[11px] text-muted">4. Không xem live trước hoặc sau khi bấm link ✅</p>
+                  <p className="text-[11px] text-muted">
                     5. Không bấm vào link mã giảm giá của người khác sau khi bấm link ✅
                   </p>
                 </div>
@@ -458,13 +464,13 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         {activeTab === "orders" && (
           <div className="bg-panel border border-border rounded-2xl overflow-hidden">
             {/* Thanh lọc trạng thái */}
-            <div className="p-6 sm:p-7 pb-4 flex flex-wrap items-center gap-2">
+            <div className="p-6 sm:p-7 pb-4 grid grid-cols-4 gap-2">
               {ORDER_FILTERS.map((f) => (
                 <button
                   key={f.id}
                   type="button"
                   onClick={() => handleFilterChange(f.id)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
+                  className={`px-2 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all cursor-pointer border text-center truncate ${
                     orderFilter === f.id
                       ? "bg-highlight text-white border-highlight"
                       : "bg-surface text-muted border-border hover:text-cream"
@@ -493,31 +499,31 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                       <div key={order.id} className="px-5 py-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm font-medium line-clamp-2">{order.productName}</p>
+                            <p className="text-sm font-medium line-clamp-2">
+                              {truncateChars(order.productName, 60)}
+                            </p>
                             <p className="font-mono-num text-xs text-muted mt-0.5">{order.id || "—"}</p>
                           </div>
                           <span className={`status-pill shrink-0 ${meta.bg} ${meta.text}`}>
                             {order.status || "—"}
                           </span>
                         </div>
-                        <div className="flex items-end justify-between mt-3">
+                        <div className="mt-3">
+                          <p className="text-[11px] text-muted">Ngày đặt</p>
+                          <p className="font-mono-num text-sm">{formatDate(order.orderedAt)}</p>
+                        </div>
+                        <div className="flex items-start justify-between gap-2 mt-3">
                           <div>
-                            <p className="text-[11px] text-muted">Ngày đặt</p>
-                            <p className="font-mono-num text-sm">{formatDate(order.orderedAt)}</p>
+                            <p className="text-[11px] text-muted">Hoa hồng</p>
+                            <p className="font-mono-num text-sm text-gold">{formatVnd(gross)}</p>
                           </div>
-                          <div className="text-right space-y-1.5">
-                            <div>
-                              <p className="text-[11px] text-muted">Hoa hồng</p>
-                              <p className="font-mono-num text-sm text-gold">{formatVnd(gross)}</p>
-                            </div>
-                            <div>
-                              <p className="text-[11px] text-muted">Sau thuế 10%</p>
-                              <p className="font-mono-num text-sm">{formatVnd(afterTax)}</p>
-                            </div>
-                            <div>
-                              <p className="text-[11px] text-muted">80% hoa hồng</p>
-                              <p className="font-mono-num text-sm text-mint">{formatVnd(final80)}</p>
-                            </div>
+                          <div>
+                            <p className="text-[11px] text-muted">Sau thuế 10%</p>
+                            <p className="font-mono-num text-sm">{formatVnd(afterTax)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[11px] text-muted">80% hoa hồng</p>
+                            <p className="font-mono-num text-sm text-mint">{formatVnd(final80)}</p>
                           </div>
                         </div>
                       </div>
@@ -533,6 +539,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                         <th className="text-left font-medium px-7 py-3">Mã đơn</th>
                         <th className="text-left font-medium px-4 py-3">Sản phẩm</th>
                         <th className="text-right font-medium px-4 py-3">Hoa hồng</th>
+                        <th className="text-right font-medium px-4 py-3">Sau thuế 10%</th>
+                        <th className="text-right font-medium px-4 py-3">80% hoa hồng</th>
                         <th className="text-left font-medium px-4 py-3">Trạng thái</th>
                         <th className="text-right font-medium px-7 py-3">Ngày đặt</th>
                       </tr>
@@ -548,24 +556,17 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             </td>
                             <td className="px-4 py-3.5">
                               <span className="line-clamp-2 max-w-[280px] inline-block align-top">
-                                {order.productName}
+                                {truncateChars(order.productName, 60)}
                               </span>
                             </td>
-                            <td className="px-4 py-3.5 text-right">
-                              <div className="space-y-1">
-                                <div>
-                                  <p className="text-[10px] text-muted">Hoa hồng</p>
-                                  <p className="font-mono-num text-gold">{formatVnd(gross)}</p>
-                                </div>
-                                <div>
-                                  <p className="text-[10px] text-muted">Sau thuế 10%</p>
-                                  <p className="font-mono-num">{formatVnd(afterTax)}</p>
-                                </div>
-                                <div>
-                                  <p className="text-[10px] text-muted">80% hoa hồng</p>
-                                  <p className="font-mono-num text-mint">{formatVnd(final80)}</p>
-                                </div>
-                              </div>
+                            <td className="px-4 py-3.5 text-right font-mono-num text-gold">
+                              {formatVnd(gross)}
+                            </td>
+                            <td className="px-4 py-3.5 text-right font-mono-num">
+                              {formatVnd(afterTax)}
+                            </td>
+                            <td className="px-4 py-3.5 text-right font-mono-num text-mint">
+                              {formatVnd(final80)}
                             </td>
                             <td className="px-4 py-3.5">
                               <span className={`status-pill ${meta.bg} ${meta.text}`}>
@@ -638,7 +639,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
           <div className="ticket-notch bg-panel border border-border rounded-2xl overflow-hidden max-w-md">
             <div className="p-6 sm:p-7">
               <p className="text-xs text-muted uppercase tracking-widest mb-2">Có sẵn để rút</p>
-              <p className="font-display font-bold text-4xl text-gold tabular-nums">
+              <p className="font-display font-bold text-4xl text-[#16c261] tabular-nums">
                 {wallet ? formatVnd(wallet.coTheRutHien) : "—"}
               </p>
 
@@ -656,7 +657,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     <button
                       type="button"
                       onClick={handleWithdrawRequest}
-                      className="bg-gold hover:bg-gold-soft text-ink font-semibold rounded-lg px-4 py-2.5 text-sm transition-colors cursor-pointer shrink-0"
+                      className="bg-[#16c261] hover:bg-[#12a852] text-white font-semibold rounded-lg px-4 py-2.5 text-sm transition-colors cursor-pointer shrink-0"
                     >
                       Rút ngay
                     </button>
@@ -715,23 +716,27 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 <div className="p-6 sm:p-7 grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-xs text-muted mb-1">🟡 Đang chờ xử lý</p>
-                    <p className="font-mono-num text-lg font-semibold">{formatVnd(wallet.dangCho)}</p>
+                    <p className="font-mono-num text-lg font-semibold text-[#eab308]">
+                      {formatVnd(wallet.dangCho)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted mb-1">🟣 Đã hoàn thành</p>
-                    <p className="font-mono-num text-lg font-semibold">
+                    <p className="font-mono-num text-lg font-semibold text-[#a855f7]">
                       {formatVnd(wallet.hoanThanhChuaRut)}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted mb-1">🟢 Có thể rút ngay</p>
-                    <p className="font-mono-num text-lg font-semibold text-mint">
+                    <p className="font-mono-num text-lg font-semibold text-[#16c261]">
                       {formatVnd(wallet.coTheRut)}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted mb-1">🔴 Đã nhận</p>
-                    <p className="font-mono-num text-lg font-semibold">{formatVnd(wallet.daNhan)}</p>
+                    <p className="font-mono-num text-lg font-semibold text-[#ef4444]">
+                      {formatVnd(wallet.daNhan)}
+                    </p>
                   </div>
                 </div>
               </>
@@ -746,7 +751,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         )}
         {activeTab === "wallet" && (
           <p className="text-center text-xs text-muted mt-8">
-            Tạo yêu cầu rút tiền và Admin sẽ chuyển tiền cho Ok trong thời gian sớm nhất có thể.
+            Tạo yêu cầu rút tiền và Admin sẽ chuyển tiền cho {displayName} trong thời gian sớm nhất có thể.
           </p>
         )}
       </div>
