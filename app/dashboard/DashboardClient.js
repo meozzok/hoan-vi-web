@@ -97,7 +97,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   }
 
   return (
-    <main className="min-h-screen">
+    <main className="login-pink min-h-screen">
       {/* Top bar */}
       <header className="border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
