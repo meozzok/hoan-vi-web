@@ -176,6 +176,9 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   const [withdrawCode, setWithdrawCode] = useState("");
   const [withdrawCopied, setWithdrawCopied] = useState(false);
 
+  // Sao chép mã đơn hàng — lưu id vừa copy để hiện dấu ✓ tạm thời.
+  const [copiedOrderId, setCopiedOrderId] = useState("");
+
   // Đồng bộ giao diện màu đã chọn ở trang đăng nhập.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- đồng bộ với localStorage, chỉ chạy 1 lần lúc mount
@@ -301,6 +304,13 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     setTimeout(() => setWithdrawCopied(false), 1800);
   }
 
+  async function handleCopyOrderId(orderId) {
+    if (!orderId) return;
+    await navigator.clipboard.writeText(orderId);
+    setCopiedOrderId(orderId);
+    setTimeout(() => setCopiedOrderId(""), 1500);
+  }
+
   const displayName = user.displayName || user.myId;
 
   // Tiêu đề đầu trang đổi theo tab đang xem.
@@ -403,7 +413,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 <button
                   type="submit"
                   disabled={converting}
-                  className="flex-1 sm:flex-none sm:w-auto bg-gold hover:bg-gold-soft text-ink font-semibold rounded-lg px-5 py-2.5 text-sm transition-colors disabled:opacity-60 cursor-pointer"
+                  className="flex-1 sm:flex-none sm:w-auto bg-[#8b5fbf] hover:bg-[#9d72d1] text-white font-bold rounded-lg px-5 py-2.5 text-sm shadow-md shadow-[#8b5fbf]/40 transition-colors disabled:opacity-60 disabled:animate-none cursor-pointer animate-pulse"
                 >
                   {converting ? "Đang tạo..." : "Tạo link hoàn tiền"}
                 </button>
@@ -446,7 +456,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     )}
                     <div className="min-w-0">
                       {productInfo.productName && (
-                        <p className="text-sm font-medium">
+                        <p className="text-base font-semibold">
                           {truncateChars(productInfo.productName, 60)}
                         </p>
                       )}
@@ -481,11 +491,11 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
                 <div className="mt-4 bg-surface/70 border border-border rounded-lg px-4 py-3.5 space-y-1.5">
                   <p className="text-xs font-semibold text-highlight mb-1">Lưu ý để đơn được ghi nhận:</p>
-                  <p className="text-[13px] text-muted">1. Xóa sản phẩm này khỏi giỏ hàng (nếu có) ✅</p>
-                  <p className="text-[13px] text-muted">2. Bấm link bỏ giỏ hoặc mua ngay ✅</p>
-                  <p className="text-[13px] text-muted">3. Thao tác chậm lại để Shopee ghi nhận đơn ✅</p>
-                  <p className="text-[13px] text-muted">4. Không xem live trước hoặc sau khi bấm link ✅</p>
-                  <p className="text-[13px] text-muted">
+                  <p className="text-[14px] italic" style={{ color: "#b28dd9" }}>1. Xóa sản phẩm này khỏi giỏ hàng (nếu có) ✅</p>
+                  <p className="text-[14px] italic" style={{ color: "#b28dd9" }}>2. Bấm link bỏ giỏ hoặc mua ngay ✅</p>
+                  <p className="text-[14px] italic" style={{ color: "#b28dd9" }}>3. Thao tác chậm lại để Shopee ghi nhận đơn ✅</p>
+                  <p className="text-[14px] italic" style={{ color: "#b28dd9" }}>4. Không xem live trước hoặc sau khi bấm link ✅</p>
+                  <p className="text-[14px] italic" style={{ color: "#b28dd9" }}>
                     5. Không bấm vào link mã giảm giá của người khác sau khi bấm link ✅
                   </p>
                 </div>
@@ -522,9 +532,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             {filteredOrders.length === 0 ? (
               <div className="px-7 pb-10 text-center">
                 <p className="text-muted text-sm">
-                  {orderFilter === "all"
-                    ? "Chưa tìm thấy đơn hàng của bạn 😿 Hãy quay lại kiểm tra vào sáng ngày mai khi có thông báo chuyển đổi từ Shopee, hoặc đảm bảo My ID của bạn khớp với sub_id trong file đã upload."
-                    : `Rất tiếc không tìm thấy đơn hàng của ${displayName} 😿`}
+                  {`Rất tiếc không tìm thấy đơn hàng của ${displayName} 😿`}
                 </p>
               </div>
             ) : (
@@ -541,7 +549,24 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             <p className="text-sm font-medium line-clamp-2">
                               {truncateChars(order.productName, 60)}
                             </p>
-                            <p className="font-mono-num text-xs text-muted mt-0.5">{order.id || "—"}</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <p className="font-mono-num text-xs text-muted">{order.id || "—"}</p>
+                              {order.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyOrderId(order.id)}
+                                  aria-label="Sao chép mã đơn"
+                                  title="Sao chép mã đơn"
+                                  className="inline-flex items-center justify-center w-4 h-4 text-muted hover:text-highlight active:scale-90 transition-all cursor-pointer shrink-0"
+                                >
+                                  {copiedOrderId === order.id ? (
+                                    <span className="text-[10px] text-mint">✓</span>
+                                  ) : (
+                                    <CopyIcon className="w-3 h-3" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <span
                             className="status-pill shrink-0"
@@ -560,18 +585,18 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             <p className="font-mono-num text-sm">{formatDate(order.completedAt)}</p>
                           </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-3 mt-3">
+                        <div className="grid grid-cols-3 gap-1.5 mt-3">
                           <div className="text-right">
-                            <p className="text-[11px]" style={{ color: AMOUNT_COLORS.gross }}>Hoa hồng</p>
-                            <p className="font-mono-num text-sm font-semibold" style={{ color: AMOUNT_COLORS.gross }}>{formatVnd(gross)}</p>
+                            <p className="text-[10px] tracking-tight whitespace-nowrap" style={{ color: AMOUNT_COLORS.gross }}>Hoa hồng</p>
+                            <p className="font-mono-num text-sm font-semibold whitespace-nowrap" style={{ color: AMOUNT_COLORS.gross }}>{formatVnd(gross)}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-[11px]" style={{ color: AMOUNT_COLORS.afterTax }}>Sau thuế 11%</p>
-                            <p className="font-mono-num text-sm font-semibold" style={{ color: AMOUNT_COLORS.afterTax }}>{formatVnd(afterTax)}</p>
+                            <p className="text-[10px] tracking-tight whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax }}>Sau thuế 11%</p>
+                            <p className="font-mono-num text-sm font-semibold whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax }}>{formatVnd(afterTax)}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-[11px]" style={{ color: AMOUNT_COLORS.final80 }}>Hoa hồng thực nhận</p>
-                            <p className="font-mono-num text-sm font-semibold" style={{ color: AMOUNT_COLORS.final80 }}>{formatVnd(final80)}</p>
+                            <p className="text-[10px] tracking-tight whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80 }}>Hoa hồng thực nhận</p>
+                            <p className="font-mono-num text-sm font-semibold whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80 }}>{formatVnd(final80)}</p>
                           </div>
                         </div>
                       </div>
