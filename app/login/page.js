@@ -187,15 +187,25 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Lời chào — đổi ngay theo Tên gợi nhớ khách nhập */}
-            <p className="text-center font-display font-bold text-xl mb-5 text-highlight transition-all">
-              Hello {nickname.trim() ? nickname.trim() : "Anh / Chị"} 👋
+            {/* Lời chào — đổi ngay theo Tên gợi nhớ khách nhập, mỗi phần 1 màu pastel */}
+            <p className="text-center font-display font-bold text-xl mb-5 transition-all">
+              <span className="text-[#8b6ec9]">Hello</span>{" "}
+              {nickname.trim() ? (
+                <span className="text-[#3f95b0]">{nickname.trim()}</span>
+              ) : (
+                <>
+                  <span className="text-[#3f95b0]">Anh</span>{" "}
+                  <span className="text-[#c99a3f]">/</span>{" "}
+                  <span className="text-[#c1626b]">Chị</span>
+                </>
+              )}{" "}
+              <span>👋</span>
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Tên gợi nhớ */}
               <div>
-                <label className="block text-xs font-semibold text-highlight mb-1.5" htmlFor="nickname">
+                <label className="block text-xs font-semibold text-[#8b6ec9] mb-1.5" htmlFor="nickname">
                   Tên gợi nhớ
                 </label>
                 <input
@@ -204,14 +214,14 @@ export default function LoginPage() {
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
                   placeholder="Đặt tên gì cũng được, vd: Thảo Shopee"
-                  className="field-important w-full bg-surface border-2 border-highlight/40 rounded-xl px-3.5 py-2.5 text-base sm:text-sm outline-none focus:border-highlight transition-colors placeholder:text-muted/60"
+                  className="field-important w-full bg-surface border-2 border-[#8b6ec9]/30 rounded-xl px-3.5 py-2.5 text-base sm:text-sm outline-none focus:border-[#8b6ec9] transition-colors placeholder:text-muted/60"
                 />
               </div>
 
               {/* Cách lấy My ID — chuyển lên trên, trước ô nhập My ID */}
               <div className="text-[11px] text-muted leading-snug space-y-2.5 bg-surface/60 border border-border rounded-xl px-3.5 py-3">
-                <p className="font-semibold text-highlight flex items-center gap-1.5 text-xs">
-                  <CuteCatIcon className="w-4 h-4 text-highlight" />
+                <p className="font-semibold text-[#c99a3f] flex items-center gap-1.5 text-xs">
+                  <CuteCatIcon className="w-4 h-4 text-[#c99a3f]" />
                   Cách lấy My ID:
                 </p>
                 <p className="flex flex-wrap items-center gap-1.5">
@@ -251,7 +261,7 @@ export default function LoginPage() {
 
               {/* My ID */}
               <div>
-                <label className="block text-xs font-semibold text-highlight mb-1.5" htmlFor="myId">
+                <label className="block text-xs font-semibold text-[#3f95b0] mb-1.5" htmlFor="myId">
                   My ID
                 </label>
                 <input
@@ -263,11 +273,11 @@ export default function LoginPage() {
                   placeholder="VD: 3630821671476852507"
                   className={`field-important w-full font-mono-num border-2 rounded-xl px-3.5 py-2.5 text-base sm:text-sm outline-none transition-all placeholder:text-[11px] placeholder:text-muted/60 ${
                     groupLinkOpened
-                      ? "bg-surface border-highlight/40 focus:border-highlight opacity-100"
-                      : "bg-surface/70 border-border opacity-60 focus:border-highlight focus:opacity-100"
+                      ? "bg-surface border-[#3f95b0]/30 focus:border-[#3f95b0] opacity-100"
+                      : "bg-surface/70 border-border opacity-60 focus:border-[#3f95b0] focus:opacity-100"
                   }`}
                 />
-                <p className="text-[11px] text-highlight/90 mt-1.5 leading-snug flex items-start gap-1">
+                <p className="text-[11px] text-[#c1626b] mt-1.5 leading-snug flex items-start gap-1">
                   <span>💗</span>
                   <span>
                     Lưu ý: Nhập đúng My ID bot gửi cho bạn trong nhóm Zalo để ghi nhận đơn hàng
@@ -285,7 +295,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-highlight hover:bg-[var(--gold-soft)] text-white font-bold rounded-xl py-3 text-sm tracking-wide shadow-lg shadow-[var(--highlight)]/30 transition-all disabled:opacity-60 cursor-pointer mt-2 active:scale-[0.98] flex items-center justify-center gap-2"
+                className="w-full bg-[#7fc99a] hover:bg-[#6fbb8b] text-white font-bold rounded-xl py-3 text-sm tracking-wide shadow-lg shadow-[#7fc99a]/40 transition-all disabled:opacity-60 cursor-pointer mt-2 active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -299,6 +309,24 @@ export default function LoginPage() {
                   </>
                 )}
               </button>
+
+              {/* Liên hệ hỗ trợ + lời chào nhỏ */}
+              <div className="text-center pt-1 space-y-1">
+                <p className="text-[11px] text-muted">
+                  Liên hệ hỗ trợ:{" "}
+                  <a
+                    href="https://zalo.me/0397088175"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#3f95b0] font-semibold hover:underline"
+                  >
+                    Zalo (0397088175)
+                  </a>
+                </p>
+                <p className="text-xs font-display font-semibold text-[#c1626b]">
+                  Hello {nickname.trim() ? nickname.trim() : "Anh / Chị"} 🌷
+                </p>
+              </div>
             </form>
           </div>
         </div>
