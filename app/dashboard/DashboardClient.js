@@ -19,27 +19,42 @@ function classifyStatus(trangThai) {
   return "pending";
 }
 
+// Bảng màu dùng chung cho bộ lọc đơn hàng + huy hiệu trạng thái từng đơn.
+const STATUS_COLORS = {
+  purple: { solid: "#8b5fbf", soft: "rgba(139,95,191,0.14)" },
+  green: { solid: "#22c55e", soft: "rgba(34,197,94,0.14)" },
+  yellow: { solid: "#eab308", soft: "rgba(234,179,8,0.16)" },
+  red: { solid: "#ef4444", soft: "rgba(239,68,68,0.14)" },
+};
+
 function statusMeta(trangThai) {
   const kind = classifyStatus(trangThai);
-  if (kind === "cancelled") return { bg: "bg-danger/15", text: "text-danger" };
-  if (kind === "completed") return { bg: "bg-mint/20", text: "text-mint" };
-  return { bg: "bg-gold/15", text: "text-gold" };
+  if (kind === "cancelled") return STATUS_COLORS.red;
+  if (kind === "completed") return STATUS_COLORS.green;
+  return STATUS_COLORS.yellow;
 }
 
 const ORDER_FILTERS = [
-  { id: "all", label: "Tất cả" },
-  { id: "completed", label: "Hoàn thành" },
-  { id: "pending", label: "Chờ xử lý" },
-  { id: "cancelled", label: "Đã hủy" },
+  { id: "all", label: "Tất cả", color: "purple" },
+  { id: "completed", label: "Hoàn thành", color: "green" },
+  { id: "pending", label: "Chờ xử lý", color: "yellow" },
+  { id: "cancelled", label: "Đã hủy", color: "red" },
 ];
 
-// Chiết khấu hiển thị theo từng đơn: hoa hồng gốc -> trừ thuế 10% -> còn 80% hoa hồng.
+// Chiết khấu hiển thị theo từng đơn: hoa hồng gốc -> trừ thuế 11% -> còn 80% hoa hồng thực nhận.
 function commissionBreakdown(grossCommission) {
   const gross = Number(grossCommission) || 0;
-  const afterTax = Math.round(gross * 0.9);
+  const afterTax = Math.round(gross * 0.89);
   const final80 = Math.round(afterTax * 0.8);
   return { gross, afterTax, final80 };
 }
+
+// Màu số tiền — đồng bộ với màu dùng ở tab Ví Tiền (Hoa hồng: đỏ, Sau thuế 11%: tím, Hoa hồng thực nhận: xanh lá).
+const AMOUNT_COLORS = {
+  gross: "#ef4444",
+  afterTax: "#a855f7",
+  final80: "#16c261",
+};
 
 function PasteIcon({ className = "" }) {
   return (
@@ -97,6 +112,20 @@ function CopyIcon({ className = "" }) {
 
 function formatVnd(amount) {
   return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(amount || 0) + "đ";
+}
+
+// Khách nhập kiểu Việt Nam (dấu chấm ngăn cách hàng nghìn, vd "50.000") —
+// bóc hết ký tự không phải số để ra đúng giá trị tuyệt đối (50000).
+function parseVndInput(str) {
+  const digits = String(str || "").replace(/[^\d]/g, "");
+  return digits ? parseInt(digits, 10) : 0;
+}
+
+// Định dạng lại khi khách gõ, để ô nhập luôn hiển thị dạng có dấu chấm ngăn cách.
+function formatAmountInput(str) {
+  const num = parseVndInput(str);
+  if (!num) return "";
+  return new Intl.NumberFormat("vi-VN").format(num);
 }
 
 function truncateChars(str, limit = 60) {
@@ -244,11 +273,15 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     router.refresh();
   }
 
+  function handleWithdrawAmountChange(e) {
+    setWithdrawAmount(formatAmountInput(e.target.value));
+  }
+
   function handleWithdrawRequest() {
     setWithdrawError("");
     setWithdrawCode("");
     setWithdrawCopied(false);
-    const amount = Math.round(Number(withdrawAmount));
+    const amount = parseVndInput(withdrawAmount);
     const available = wallet ? wallet.coTheRutHien : 0;
     if (!amount || amount <= 0) {
       setWithdrawError("Vui lòng nhập số tiền muốn rút.");
@@ -465,27 +498,33 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
           <div className="bg-panel border border-border rounded-2xl overflow-hidden">
             {/* Thanh lọc trạng thái */}
             <div className="p-6 sm:p-7 pb-4 grid grid-cols-4 gap-2">
-              {ORDER_FILTERS.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => handleFilterChange(f.id)}
-                  className={`px-2 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all cursor-pointer border text-center truncate ${
-                    orderFilter === f.id
-                      ? "bg-highlight text-white border-highlight"
-                      : "bg-surface text-muted border-border hover:text-cream"
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
+              {ORDER_FILTERS.map((f) => {
+                const c = STATUS_COLORS[f.color];
+                const active = orderFilter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => handleFilterChange(f.id)}
+                    style={
+                      active
+                        ? { background: c.solid, color: "#fff", borderColor: c.solid }
+                        : { background: c.soft, color: c.solid, borderColor: c.soft }
+                    }
+                    className="px-2 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all cursor-pointer border text-center truncate"
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
             </div>
 
             {filteredOrders.length === 0 ? (
               <div className="px-7 pb-10 text-center">
                 <p className="text-muted text-sm">
-                  Chưa tìm thấy đơn hàng của bạn 😿 Hãy quay lại kiểm tra vào sáng ngày mai khi có thông
-                  báo chuyển đổi từ Shopee, hoặc đảm bảo My ID của bạn khớp với sub_id trong file đã upload.
+                  {orderFilter === "all"
+                    ? "Chưa tìm thấy đơn hàng của bạn 😿 Hãy quay lại kiểm tra vào sáng ngày mai khi có thông báo chuyển đổi từ Shopee, hoặc đảm bảo My ID của bạn khớp với sub_id trong file đã upload."
+                    : `Rất tiếc không tìm thấy đơn hàng của ${displayName} 😿`}
                 </p>
               </div>
             ) : (
@@ -504,26 +543,35 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             </p>
                             <p className="font-mono-num text-xs text-muted mt-0.5">{order.id || "—"}</p>
                           </div>
-                          <span className={`status-pill shrink-0 ${meta.bg} ${meta.text}`}>
+                          <span
+                            className="status-pill shrink-0"
+                            style={{ background: meta.soft, color: meta.solid }}
+                          >
                             {order.status || "—"}
                           </span>
                         </div>
-                        <div className="mt-3">
-                          <p className="text-[11px] text-muted">Ngày đặt</p>
-                          <p className="font-mono-num text-sm">{formatDate(order.orderedAt)}</p>
+                        <div className="flex items-start justify-between gap-2 mt-3">
+                          <div>
+                            <p className="text-[11px] text-muted">Ngày đặt</p>
+                            <p className="font-mono-num text-sm">{formatDate(order.orderedAt)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[11px] text-muted">Ngày hoàn thành</p>
+                            <p className="font-mono-num text-sm">{formatDate(order.completedAt)}</p>
+                          </div>
                         </div>
                         <div className="flex items-start justify-between gap-2 mt-3">
                           <div>
-                            <p className="text-[11px] text-muted">Hoa hồng</p>
-                            <p className="font-mono-num text-sm text-gold">{formatVnd(gross)}</p>
+                            <p className="text-[11px]" style={{ color: AMOUNT_COLORS.gross }}>Hoa hồng</p>
+                            <p className="font-mono-num text-sm font-semibold" style={{ color: AMOUNT_COLORS.gross }}>{formatVnd(gross)}</p>
                           </div>
                           <div>
-                            <p className="text-[11px] text-muted">Sau thuế 10%</p>
-                            <p className="font-mono-num text-sm">{formatVnd(afterTax)}</p>
+                            <p className="text-[11px]" style={{ color: AMOUNT_COLORS.afterTax }}>Sau thuế 11%</p>
+                            <p className="font-mono-num text-sm font-semibold" style={{ color: AMOUNT_COLORS.afterTax }}>{formatVnd(afterTax)}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-[11px] text-muted">80% hoa hồng</p>
-                            <p className="font-mono-num text-sm text-mint">{formatVnd(final80)}</p>
+                            <p className="text-[11px]" style={{ color: AMOUNT_COLORS.final80 }}>Hoa hồng thực nhận</p>
+                            <p className="font-mono-num text-sm font-semibold" style={{ color: AMOUNT_COLORS.final80 }}>{formatVnd(final80)}</p>
                           </div>
                         </div>
                       </div>
@@ -538,11 +586,12 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                       <tr className="border-t border-border text-muted text-xs uppercase tracking-wider">
                         <th className="text-left font-medium px-7 py-3">Mã đơn</th>
                         <th className="text-left font-medium px-4 py-3">Sản phẩm</th>
-                        <th className="text-right font-medium px-4 py-3">Hoa hồng</th>
-                        <th className="text-right font-medium px-4 py-3">Sau thuế 10%</th>
-                        <th className="text-right font-medium px-4 py-3">80% hoa hồng</th>
+                        <th className="text-right font-medium px-4 py-3" style={{ color: AMOUNT_COLORS.gross }}>Hoa hồng</th>
+                        <th className="text-right font-medium px-4 py-3" style={{ color: AMOUNT_COLORS.afterTax }}>Sau thuế 11%</th>
+                        <th className="text-right font-medium px-4 py-3" style={{ color: AMOUNT_COLORS.final80 }}>Hoa hồng thực nhận</th>
                         <th className="text-left font-medium px-4 py-3">Trạng thái</th>
-                        <th className="text-right font-medium px-7 py-3">Ngày đặt</th>
+                        <th className="text-right font-medium px-4 py-3">Ngày đặt</th>
+                        <th className="text-right font-medium px-7 py-3">Ngày hoàn thành</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -559,22 +608,28 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                                 {truncateChars(order.productName, 60)}
                               </span>
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num text-gold">
+                            <td className="px-4 py-3.5 text-right font-mono-num font-semibold" style={{ color: AMOUNT_COLORS.gross }}>
                               {formatVnd(gross)}
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num">
+                            <td className="px-4 py-3.5 text-right font-mono-num font-semibold" style={{ color: AMOUNT_COLORS.afterTax }}>
                               {formatVnd(afterTax)}
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num text-mint">
+                            <td className="px-4 py-3.5 text-right font-mono-num font-semibold" style={{ color: AMOUNT_COLORS.final80 }}>
                               {formatVnd(final80)}
                             </td>
                             <td className="px-4 py-3.5">
-                              <span className={`status-pill ${meta.bg} ${meta.text}`}>
+                              <span
+                                className="status-pill"
+                                style={{ background: meta.soft, color: meta.solid }}
+                              >
                                 {order.status || "—"}
                               </span>
                             </td>
-                            <td className="px-7 py-3.5 text-right text-muted text-xs">
+                            <td className="px-4 py-3.5 text-right text-muted text-xs">
                               {formatDate(order.orderedAt)}
+                            </td>
+                            <td className="px-7 py-3.5 text-right text-muted text-xs">
+                              {formatDate(order.completedAt)}
                             </td>
                           </tr>
                         );
@@ -647,10 +702,10 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 <div className="mt-4 space-y-3">
                   <div className="flex gap-2">
                     <input
-                      type="number"
-                      min="1"
+                      type="text"
+                      inputMode="numeric"
                       value={withdrawAmount}
-                      onChange={(e) => setWithdrawAmount(e.target.value)}
+                      onChange={handleWithdrawAmountChange}
                       placeholder="Nhập số tiền muốn rút"
                       className="flex-1 bg-surface border border-border rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60"
                     />
