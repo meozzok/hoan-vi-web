@@ -1,16 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DEFAULT_THEME, getStoredTheme } from "../../lib/theme";
 
+// Link nhóm Zalo nơi khách nhận My ID — dùng để khách gửi lệnh rút tiền vào nhóm.
+const ZALO_GROUP_LINK = "https://zalo.me/g/msd7vvhjcwiffr3tyqor";
+
+const PAGE_SIZE = 10;
+const PAGE_WINDOW = 10;
+
 // Bot dùng chữ trạng thái tự do (vd "Hoàn thành", "Chờ xử lý", "Đã huỷ"...)
 // nên map theo từ khoá thay vì enum cố định, phòng khi bot đổi cách gọi.
-function statusMeta(trangThai) {
+function classifyStatus(trangThai) {
   const s = (trangThai || "").toLowerCase();
-  if (s.includes("huỷ") || s.includes("hủy")) return { bg: "bg-danger/15", text: "text-danger" };
-  if (s.includes("hoàn thành")) return { bg: "bg-mint/20", text: "text-mint" };
+  if (s.includes("huỷ") || s.includes("hủy")) return "cancelled";
+  if (s.includes("hoàn thành")) return "completed";
+  return "pending";
+}
+
+function statusMeta(trangThai) {
+  const kind = classifyStatus(trangThai);
+  if (kind === "cancelled") return { bg: "bg-danger/15", text: "text-danger" };
+  if (kind === "completed") return { bg: "bg-mint/20", text: "text-mint" };
   return { bg: "bg-gold/15", text: "text-gold" };
+}
+
+const ORDER_FILTERS = [
+  { id: "all", label: "Tất cả" },
+  { id: "completed", label: "Hoàn thành" },
+  { id: "pending", label: "Đang chờ xử lý" },
+  { id: "cancelled", label: "Đã hủy" },
+];
+
+// Chiết khấu hiển thị theo từng đơn: hoa hồng gốc -> trừ thuế 10% -> còn 80% hoa hồng.
+function commissionBreakdown(grossCommission) {
+  const gross = Number(grossCommission) || 0;
+  const afterTax = Math.round(gross * 0.9);
+  const final80 = Math.round(afterTax * 0.8);
+  return { gross, afterTax, final80 };
 }
 
 function PasteIcon({ className = "" }) {
@@ -58,6 +86,15 @@ function WalletTabIcon({ className = "" }) {
   );
 }
 
+function CopyIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <rect x="9" y="9" width="12" height="12" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+}
+
 function formatVnd(amount) {
   return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(amount || 0) + "đ";
 }
@@ -93,11 +130,51 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   const [theme, setTheme] = useState(DEFAULT_THEME);
   const [activeTab, setActiveTab] = useState("link");
 
+  // Đơn hàng: lọc theo trạng thái + phân trang.
+  const [orderFilter, setOrderFilter] = useState("all");
+  const [orderPage, setOrderPage] = useState(1);
+  const [pageWindowStart, setPageWindowStart] = useState(0);
+
+  // Ví tiền: yêu cầu rút.
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawError, setWithdrawError] = useState("");
+  const [withdrawCode, setWithdrawCode] = useState("");
+  const [withdrawCopied, setWithdrawCopied] = useState(false);
+
   // Đồng bộ giao diện màu đã chọn ở trang đăng nhập.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- đồng bộ với localStorage, chỉ chạy 1 lần lúc mount
     setTheme(getStoredTheme());
   }, []);
+
+  const filteredOrders = useMemo(() => {
+    if (orderFilter === "all") return orders;
+    return orders.filter((o) => classifyStatus(o.status) === orderFilter);
+  }, [orders, orderFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
+  const pagedOrders = useMemo(() => {
+    const start = (orderPage - 1) * PAGE_SIZE;
+    return filteredOrders.slice(start, start + PAGE_SIZE);
+  }, [filteredOrders, orderPage]);
+
+  function handleFilterChange(id) {
+    setOrderFilter(id);
+    setOrderPage(1);
+    setPageWindowStart(0);
+  }
+
+  function goToPage(p) {
+    setOrderPage(p);
+  }
+
+  function advancePageWindow() {
+    setPageWindowStart((w) => Math.min(w + PAGE_WINDOW, Math.max(0, totalPages - 1)));
+  }
+
+  function retreatPageWindow() {
+    setPageWindowStart((w) => Math.max(0, w - PAGE_WINDOW));
+  }
 
   async function handlePasteUrl() {
     try {
@@ -161,12 +238,49 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     router.refresh();
   }
 
+  function handleWithdrawRequest() {
+    setWithdrawError("");
+    setWithdrawCode("");
+    setWithdrawCopied(false);
+    const amount = Math.round(Number(withdrawAmount));
+    const available = wallet ? wallet.coTheRutHien : 0;
+    if (!amount || amount <= 0) {
+      setWithdrawError("Vui lòng nhập số tiền muốn rút.");
+      return;
+    }
+    if (amount > available) {
+      setWithdrawError(`Số tiền vượt quá số dư có thể rút (${formatVnd(available)}).`);
+      return;
+    }
+    setWithdrawCode(`#ruttien_${amount}`);
+  }
+
+  async function handleCopyWithdrawCode() {
+    if (!withdrawCode) return;
+    await navigator.clipboard.writeText(withdrawCode);
+    setWithdrawCopied(true);
+    setTimeout(() => setWithdrawCopied(false), 1800);
+  }
+
+  const displayName = user.displayName || user.myId;
+
+  // Tiêu đề đầu trang đổi theo tab đang xem.
+  let headerTitle = `Hello ${displayName}🌷`;
+  let headerSubtitle = "Tiền kiếm khó lắm hãy tiết kiệm nhé!";
+  if (activeTab === "orders") {
+    headerTitle = `Các đơn hàng của ${displayName} 🛍️`;
+    headerSubtitle = "";
+  } else if (activeTab === "wallet") {
+    headerTitle = `Tổng tiền hoa hồng của ${displayName} 🌷`;
+    headerSubtitle = "";
+  }
+
   return (
     <main className={`login-pink theme-${theme} min-h-screen`}>
       {/* Top bar */}
       <header className="border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-start gap-0.5">
             <div className="w-7 h-7 rounded-lg bg-gold flex items-center justify-center">
               <span className="font-display font-bold text-ink text-xs">%</span>
             </div>
@@ -193,11 +307,9 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 pb-28 sm:pb-10">
         <div className="mb-8">
           <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
-            Chào {user.displayName || user.myId} 👋
+            {headerTitle}
           </h1>
-          <p className="text-muted text-sm mt-1">
-            Dán link Shopee, nhận hoàn tiền tự động — nhanh, gọn, dễ như trở bàn tay 💸
-          </p>
+          {headerSubtitle && <p className="text-muted text-sm mt-1">{headerSubtitle}</p>}
         </div>
 
         {/* Thanh chuyển tab (ẩn trên desktop vì đã có thanh cố định phía dưới) */}
@@ -222,10 +334,10 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         {activeTab === "link" && (
           <div className="bg-panel border border-border rounded-2xl p-6 sm:p-7">
             <h2 className="font-display font-semibold text-lg mb-1">
-              Link sản phẩm {user.displayName ? user.displayName : "bạn"} muốn mua
+              Dán link sản phẩm {user.displayName ? user.displayName : "bạn"} muốn mua
             </h2>
             <p className="text-muted text-sm mb-5">
-              Dán link, bấm tạo — xong! Link hoàn tiền của riêng bạn sẽ sẵn sàng trong vài giây ⚡
+              Dán link &gt; Tạo link hoàn tiền &gt; Mua ngay &gt; Sáng hôm sau khoảng 9h quay lại kiểm tra🔥
             </p>
 
             <form onSubmit={handleConvert} className="space-y-3">
@@ -345,14 +457,25 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
         {activeTab === "orders" && (
           <div className="bg-panel border border-border rounded-2xl overflow-hidden">
-            <div className="p-6 sm:p-7 pb-4 flex items-center justify-between">
-              <div>
-                <h2 className="font-display font-semibold text-lg">Đơn hàng theo My ID</h2>
-                <p className="text-muted text-sm mt-0.5">Tra cứu theo sub_id {user.myId}</p>
-              </div>
+            {/* Thanh lọc trạng thái */}
+            <div className="p-6 sm:p-7 pb-4 flex flex-wrap items-center gap-2">
+              {ORDER_FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => handleFilterChange(f.id)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border ${
+                    orderFilter === f.id
+                      ? "bg-highlight text-white border-highlight"
+                      : "bg-surface text-muted border-border hover:text-cream"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
             </div>
 
-            {orders.length === 0 ? (
+            {filteredOrders.length === 0 ? (
               <div className="px-7 pb-10 text-center">
                 <p className="text-muted text-sm">
                   Chưa tìm thấy đơn hàng của bạn 😿 Hãy quay lại kiểm tra vào sáng ngày mai khi có thông
@@ -363,13 +486,14 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               <>
                 {/* Dạng thẻ - dùng trên điện thoại */}
                 <div className="sm:hidden divide-y divide-border/60 border-t border-border">
-                  {orders.map((order) => {
+                  {pagedOrders.map((order) => {
                     const meta = statusMeta(order.status);
+                    const { gross, afterTax, final80 } = commissionBreakdown(order.commission);
                     return (
                       <div key={order.id} className="px-5 py-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{order.productName}</p>
+                            <p className="text-sm font-medium line-clamp-2">{order.productName}</p>
                             <p className="font-mono-num text-xs text-muted mt-0.5">{order.id || "—"}</p>
                           </div>
                           <span className={`status-pill shrink-0 ${meta.bg} ${meta.text}`}>
@@ -381,11 +505,19 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             <p className="text-[11px] text-muted">Ngày đặt</p>
                             <p className="font-mono-num text-sm">{formatDate(order.orderedAt)}</p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-[11px] text-muted">Hoa hồng</p>
-                            <p className="font-mono-num text-sm text-gold">
-                              {formatVnd(order.commission)}
-                            </p>
+                          <div className="text-right space-y-1.5">
+                            <div>
+                              <p className="text-[11px] text-muted">Hoa hồng</p>
+                              <p className="font-mono-num text-sm text-gold">{formatVnd(gross)}</p>
+                            </div>
+                            <div>
+                              <p className="text-[11px] text-muted">Sau thuế 10%</p>
+                              <p className="font-mono-num text-sm">{formatVnd(afterTax)}</p>
+                            </div>
+                            <div>
+                              <p className="text-[11px] text-muted">80% hoa hồng</p>
+                              <p className="font-mono-num text-sm text-mint">{formatVnd(final80)}</p>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -406,16 +538,34 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                       </tr>
                     </thead>
                     <tbody>
-                      {orders.map((order) => {
+                      {pagedOrders.map((order) => {
                         const meta = statusMeta(order.status);
+                        const { gross, afterTax, final80 } = commissionBreakdown(order.commission);
                         return (
                           <tr key={order.id} className="border-t border-border/60">
                             <td className="px-7 py-3.5 font-mono-num text-xs text-muted">
                               {order.id || "—"}
                             </td>
-                            <td className="px-4 py-3.5">{order.productName}</td>
-                            <td className="px-4 py-3.5 text-right font-mono-num text-gold">
-                              {formatVnd(order.commission)}
+                            <td className="px-4 py-3.5">
+                              <span className="line-clamp-2 max-w-[280px] inline-block align-top">
+                                {order.productName}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5 text-right">
+                              <div className="space-y-1">
+                                <div>
+                                  <p className="text-[10px] text-muted">Hoa hồng</p>
+                                  <p className="font-mono-num text-gold">{formatVnd(gross)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] text-muted">Sau thuế 10%</p>
+                                  <p className="font-mono-num">{formatVnd(afterTax)}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] text-muted">80% hoa hồng</p>
+                                  <p className="font-mono-num text-mint">{formatVnd(final80)}</p>
+                                </div>
+                              </div>
                             </td>
                             <td className="px-4 py-3.5">
                               <span className={`status-pill ${meta.bg} ${meta.text}`}>
@@ -431,6 +581,54 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     </tbody>
                   </table>
                 </div>
+
+                {/* Phân trang: tối đa 10 số trang mỗi lượt, mỗi trang 10 đơn */}
+                {totalPages > 1 && (
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 px-5 py-5 border-t border-border">
+                    {pageWindowStart > 0 && (
+                      <button
+                        type="button"
+                        onClick={retreatPageWindow}
+                        className="w-8 h-8 rounded-full text-xs font-semibold text-muted hover:text-cream border border-border cursor-pointer"
+                        aria-label="Trang trước đó"
+                      >
+                        ‹
+                      </button>
+                    )}
+                    {Array.from({ length: Math.min(PAGE_WINDOW, totalPages - pageWindowStart) }).map(
+                      (_, i) => {
+                        const p = pageWindowStart + i + 1;
+                        return (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => goToPage(p)}
+                            className={`w-8 h-8 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
+                              orderPage === p
+                                ? "bg-highlight text-white"
+                                : "text-muted hover:text-cream border border-border"
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        );
+                      }
+                    )}
+                    {pageWindowStart + PAGE_WINDOW < totalPages && (
+                      <button
+                        type="button"
+                        onClick={advancePageWindow}
+                        className="w-8 h-8 rounded-full text-xs font-semibold text-muted hover:text-cream border border-border cursor-pointer"
+                        aria-label="Xem thêm trang"
+                      >
+                        ›...
+                      </button>
+                    )}
+                    <span className="text-xs text-muted ml-2 font-mono-num">
+                      Trang {orderPage}/{totalPages}
+                    </span>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -439,38 +637,100 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         {activeTab === "wallet" && (
           <div className="ticket-notch bg-panel border border-border rounded-2xl overflow-hidden max-w-md">
             <div className="p-6 sm:p-7">
-              <p className="text-xs text-muted uppercase tracking-widest mb-2">Có thể rút hiện</p>
+              <p className="text-xs text-muted uppercase tracking-widest mb-2">Có sẵn để rút</p>
               <p className="font-display font-bold text-4xl text-gold tabular-nums">
                 {wallet ? formatVnd(wallet.coTheRutHien) : "—"}
               </p>
-              <p className="text-xs text-muted mt-2">
-                {wallet
-                  ? "Đơn đã hoàn thành ≥ 3 ngày, trừ phần đã nhận"
-                  : "Chưa có dữ liệu ví cho My ID này — hãy đợi lần đồng bộ tiếp theo"}
-              </p>
+
+              {wallet && (
+                <div className="mt-4 space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      value={withdrawAmount}
+                      onChange={(e) => setWithdrawAmount(e.target.value)}
+                      placeholder="Nhập số tiền muốn rút"
+                      className="flex-1 bg-surface border border-border rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleWithdrawRequest}
+                      className="bg-gold hover:bg-gold-soft text-ink font-semibold rounded-lg px-4 py-2.5 text-sm transition-colors cursor-pointer shrink-0"
+                    >
+                      Rút ngay
+                    </button>
+                  </div>
+
+                  {withdrawError && (
+                    <p className="text-xs text-danger bg-danger/10 border border-danger/30 rounded-lg px-3 py-2">
+                      {withdrawError}
+                    </p>
+                  )}
+
+                  {withdrawCode && (
+                    <div className="bg-surface border border-border rounded-lg p-3.5 space-y-2.5">
+                      <div>
+                        <p className="text-[11px] text-muted mb-1">
+                          Sao chép lệnh rút và gửi vào nhóm
+                        </p>
+                        <div className="flex items-center gap-2 bg-panel-2 border border-border rounded-lg px-3 py-2">
+                          <code className="flex-1 font-mono-num text-sm truncate">{withdrawCode}</code>
+                          <button
+                            type="button"
+                            onClick={handleCopyWithdrawCode}
+                            aria-label="Sao chép lệnh rút"
+                            title="Sao chép"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-panel text-gold hover:brightness-95 active:scale-90 transition-all cursor-pointer shrink-0"
+                          >
+                            <CopyIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        {withdrawCopied && (
+                          <p className="text-[11px] text-mint mt-1">Đã sao chép ✓</p>
+                        )}
+                      </div>
+                      <a
+                        href={ZALO_GROUP_LINK}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-center bg-highlight hover:brightness-95 text-white text-sm font-semibold rounded-lg px-3.5 py-2.5 transition-all active:scale-[0.98] cursor-pointer"
+                      >
+                        Gửi vào nhóm
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!wallet && (
+                <p className="text-xs text-muted mt-2">
+                  Chưa có dữ liệu ví cho My ID này — hãy đợi lần đồng bộ tiếp theo
+                </p>
+              )}
             </div>
             {wallet && (
               <>
                 <div className="ticket-dashed" />
                 <div className="p-6 sm:p-7 grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-muted mb-1">Đang chờ</p>
+                    <p className="text-xs text-muted mb-1">🟡 Đang chờ xử lý</p>
                     <p className="font-mono-num text-lg font-semibold">{formatVnd(wallet.dangCho)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted mb-1">Hoàn thành chưa rút</p>
+                    <p className="text-xs text-muted mb-1">🟣 Đã hoàn thành</p>
                     <p className="font-mono-num text-lg font-semibold">
                       {formatVnd(wallet.hoanThanhChuaRut)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted mb-1">Có thể rút</p>
+                    <p className="text-xs text-muted mb-1">🟢 Có thể rút ngay</p>
                     <p className="font-mono-num text-lg font-semibold text-mint">
                       {formatVnd(wallet.coTheRut)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted mb-1">Đã nhận</p>
+                    <p className="text-xs text-muted mb-1">🔴 Đã nhận</p>
                     <p className="font-mono-num text-lg font-semibold">{formatVnd(wallet.daNhan)}</p>
                   </div>
                 </div>
@@ -479,10 +739,16 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
           </div>
         )}
 
-        <p className="text-center text-xs text-muted mt-8">
-          Đơn hàng &amp; ví tiền được đồng bộ trực tiếp từ dữ liệu bot (phuongthaovip-main /
-          bot_v23.py) theo My ID = sub_id của bạn.
-        </p>
+        {activeTab === "link" && (
+          <p className="text-center text-xs text-muted mt-8">
+            Việc ghi nhận chuyển đổi đơn hàng là do Shopee quyết định, chúng tôi không thể can thiệp!
+          </p>
+        )}
+        {activeTab === "wallet" && (
+          <p className="text-center text-xs text-muted mt-8">
+            Tạo yêu cầu rút tiền và Admin sẽ chuyển tiền cho Ok trong thời gian sớm nhất có thể.
+          </p>
+        )}
       </div>
 
       {/* Thanh chuyển tab cố định phía dưới màn hình (kiểu app di động) */}
