@@ -4,15 +4,17 @@ Web app Next.js, deploy trên Vercel. Người dùng đăng nhập bằng **My I
 tự động gắn My ID làm `sub_id`, rồi tra cứu **đơn hàng** và **ví tiền** của mình.
 
 ## Tính năng
-- Đăng nhập bằng **Tên đăng nhập** (không cần mật khẩu). Quên tên đăng nhập → đăng nhập lại bằng
-  **My ID + Mã đăng nhập** dùng 1 lần (xem `migration-add-username-and-login-codes.sql`)
-- Đăng ký bằng **Tên đăng nhập** (định dạng `TênZalo-4 số cuối SĐT`, vd `PhuongThao-6789`) + **My ID**
-  (dãy số lấy từ bot Zalo qua lệnh `#My_ID`). Mỗi My ID chỉ đăng ký được 1 tên.
+- Đăng nhập bằng **Tên gợi nhớ** (tự do, đổi được bất cứ lúc nào) và/hoặc **My ID**
+  (dãy số lấy từ bot Zalo qua lệnh `#My_ID`). Chưa có tài khoản → tự tạo ngay ở lần
+  đăng nhập đầu bằng My ID. Lần sau có thể đăng nhập lại chỉ bằng Tên gợi nhớ hoặc
+  chỉ bằng My ID. Mỗi My ID gắn với 1 tên gợi nhớ tại một thời điểm — nếu đăng nhập
+  lại bằng My ID với tên khác, hệ thống ghi nhận tên mới nhất (xem
+  `migration-simplify-login-nickname-myid.sql`)
 - Mỗi My ID là duy nhất, dùng làm `sub_id` gắn vào mọi link Shopee đã chuyển
 - Ô chuyển link Shopee → sinh link mới có gắn My ID (đang ở chế độ demo, xem phần "Nối API thật" bên dưới)
 - Ô đơn hàng: danh sách đơn hàng gắn với My ID, trạng thái Chờ xác nhận / Đã xác nhận / Đã cộng ví / Đã huỷ
 - Ô ví tiền: số dư hoàn tiền hiện có, số đơn chờ hoàn tiền
-- Tài khoản (My ID / mật khẩu) lưu trong Supabase (Postgres)
+- Tài khoản (My ID / Tên gợi nhớ) lưu trong Supabase (Postgres)
 - Dữ liệu đơn hàng/ví tiền/đã nhận (donhang/vitien/danhan) lưu trong **Upstash
   Redis** — cùng cách và cùng khoá mà `phuongthaovip-main` đang dùng, xem mục 4.
 
@@ -36,7 +38,7 @@ cp .env.example .env.local   # rồi điền SUPABASE_URL, SUPABASE_SERVICE_ROLE
                               # UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN (xem mục 4)
 npm run dev
 ```
-Mở http://localhost:3000 → sẽ tự chuyển tới `/login`. Chọn tab "Tạo My ID mới" để đăng ký tài khoản đầu tiên. Đơn hàng/ví tiền sẽ hiện ra ngay khi có dữ liệu tương ứng My ID trong Upstash Redis (đồng bộ từ `phuongthaovip-main`/bot — xem mục 4).
+Mở http://localhost:3000 → sẽ tự chuyển tới `/login`. Nhập một Tên gợi nhớ bất kỳ và lấy My ID theo hướng dẫn ngay trên trang để đăng nhập lần đầu (hệ thống sẽ tự tạo tài khoản). Đơn hàng/ví tiền sẽ hiện ra ngay khi có dữ liệu tương ứng My ID trong Upstash Redis (đồng bộ từ `phuongthaovip-main`/bot — xem mục 4).
 
 `JWT_SECRET` là chuỗi bí mật tự đặt, có thể tạo nhanh bằng lệnh:
 ```bash
@@ -116,10 +118,9 @@ giao diện sẽ tự hiển thị, không cần sửa code frontend.
 ## Cấu trúc thư mục chính
 ```
 app/
-  login/page.js          → trang đăng nhập / đăng ký My ID
+  login/page.js          → trang đăng nhập bằng Tên gợi nhớ + My ID
   dashboard/page.js       → trang chính (server component, lấy dữ liệu)
   dashboard/DashboardClient.js → giao diện chuyển link, ví tiền, bảng đơn hàng
-  api/auth/register       → API tạo My ID mới
   api/auth/login          → API đăng nhập
   api/auth/logout         → API đăng xuất
   api/me                  → API lấy thông tin tài khoản + số dư ví
@@ -129,7 +130,6 @@ lib/
   supabase.js             → kết nối Supabase, chỉ dùng cho bảng users (server-only)
   botData.js               → đọc/ghi donhang/vitien/danhan trong Upstash Redis
   auth.js                 → tạo/xác thực JWT phiên đăng nhập
-  password.js             → băm/kiểm tra mật khẩu
   shopee.js                → logic chuyển link Shopee (chỗ cần thay API thật)
 proxy.js                  → bảo vệ route /dashboard, redirect nếu chưa đăng nhập
 supabase-schema.sql       → schema database Supabase (users/orders/wallet_transactions), chạy 1 lần trong SQL Editor
