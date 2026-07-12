@@ -331,9 +331,9 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex flex-col items-start gap-0.5">
             <div className="w-7 h-7 rounded-lg bg-gold flex items-center justify-center">
-              <span className="font-display font-bold text-ink text-xs">%</span>
+              <span className="font-display font-bold text-ink text-xs">☘️</span>
             </div>
-            <span className="font-display font-semibold tracking-tight">Mua Sắm Hoàn Tiền 🌷</span>
+            <span className="font-display font-semibold tracking-tight">Hoàn Tiền Cùng Phương Thảo 😘</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1.5 sm:gap-2 bg-panel border border-border rounded-full pl-2.5 sm:pl-3 pr-1 py-1">
@@ -586,15 +586,15 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                           </div>
                         </div>
                         <div className="grid grid-cols-3 gap-1.5 mt-3">
-                          <div className="text-right">
+                          <div className="text-center">
                             <p className="text-[10px] tracking-tight whitespace-nowrap" style={{ color: AMOUNT_COLORS.gross }}>Hoa hồng</p>
                             <p className="font-mono-num text-sm font-semibold whitespace-nowrap" style={{ color: AMOUNT_COLORS.gross }}>{formatVnd(gross)}</p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-[10px] tracking-tight whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax }}>Sau thuế 11%</p>
+                          <div className="text-center">
+                            <p className="text-[10px] tracking-tight whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax }}>Sau thuế</p>
                             <p className="font-mono-num text-sm font-semibold whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax }}>{formatVnd(afterTax)}</p>
                           </div>
-                          <div className="text-right">
+                          <div className="text-center">
                             <p className="text-[10px] tracking-tight whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80 }}>Hoa hồng thực nhận</p>
                             <p className="font-mono-num text-sm font-semibold whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80 }}>{formatVnd(final80)}</p>
                           </div>
@@ -612,7 +612,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                         <th className="text-left font-medium px-7 py-3">Mã đơn</th>
                         <th className="text-left font-medium px-4 py-3">Sản phẩm</th>
                         <th className="text-right font-medium px-4 py-3" style={{ color: AMOUNT_COLORS.gross }}>Hoa hồng</th>
-                        <th className="text-right font-medium px-4 py-3" style={{ color: AMOUNT_COLORS.afterTax }}>Sau thuế 11%</th>
+                        <th className="text-right font-medium px-4 py-3" style={{ color: AMOUNT_COLORS.afterTax }}>Sau thuế</th>
                         <th className="text-right font-medium px-4 py-3" style={{ color: AMOUNT_COLORS.final80 }}>Hoa hồng thực nhận</th>
                         <th className="text-left font-medium px-4 py-3">Trạng thái</th>
                         <th className="text-right font-medium px-4 py-3">Ngày đặt</th>
