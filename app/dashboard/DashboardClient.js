@@ -291,7 +291,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
       return;
     }
     if (amount > available) {
-      setWithdrawError(`Số tiền vượt quá số dư có thể rút (${formatVnd(available)}).`);
+      const suggested = Math.max(available - 1, 0);
+      setWithdrawError(`Hãy bỏ lại 1đ nhé. Rút ${formatVnd(suggested)} đi ${displayName}.`);
       return;
     }
     setWithdrawCode(`#ruttien_${amount}`);
@@ -330,10 +331,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
       <header className="border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex flex-col items-start gap-0.5">
-            <div className="w-7 h-7 rounded-lg bg-gold flex items-center justify-center">
-              <span className="font-display font-bold text-ink text-xs">☘️</span>
-            </div>
-            <span className="font-display font-semibold tracking-tight">Hoàn Tiền Cùng Phương Thảo 😘</span>
+            <span className="font-display font-semibold text-sm tracking-tight">Hoàn Tiền Cùng Phương Thảo 😘</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1.5 sm:gap-2 bg-panel border border-border rounded-full pl-2.5 sm:pl-3 pr-1 py-1">
@@ -797,7 +795,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   <div>
                     <p className="text-xs text-muted mb-1">🟡 Đang chờ xử lý</p>
                     <p className="font-mono-num text-lg font-semibold text-[#eab308]">
-                      {formatVnd(wallet.dangCho)}
+                      {formatVnd(commissionBreakdown(wallet.dangCho).final80)}
                     </p>
                   </div>
                   <div>
