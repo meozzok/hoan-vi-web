@@ -77,18 +77,6 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     setTimeout(() => setCopied(false), 1800);
   }
 
-  async function handleShare() {
-    if (navigator.share) {
-      try {
-        await navigator.share({ url: convertedUrl, title: "Link hoàn tiền Shopee" });
-      } catch {
-        // Người dùng huỷ chia sẻ, bỏ qua
-      }
-    } else {
-      handleCopy();
-    }
-  }
-
   async function handleLogout() {
     setLoggingOut(true);
     await fetch("/api/auth/logout", { method: "POST" });
@@ -105,7 +93,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             <div className="w-7 h-7 rounded-lg bg-gold flex items-center justify-center">
               <span className="font-display font-bold text-ink text-xs">%</span>
             </div>
-            <span className="font-display font-semibold tracking-tight">Hoàn Ví</span>
+            <span className="font-display font-semibold tracking-tight">Mua Sắm Hoàn Tiền 🌷</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1.5 sm:gap-2 bg-panel border border-border rounded-full pl-2.5 sm:pl-3 pr-1 py-1">
@@ -157,7 +145,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 disabled={converting}
                 className="w-full sm:w-auto bg-gold hover:bg-gold-soft text-ink font-semibold rounded-lg px-5 py-2.5 text-sm transition-colors disabled:opacity-60 cursor-pointer"
               >
-                {converting ? "Đang chuyển..." : "Chuyển link"}
+                {converting ? "Đang tạo..." : "Tạo link hoàn tiền"}
               </button>
             </form>
 
@@ -192,37 +180,44 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                         </p>
                       )}
                       <p className="text-xs text-muted mt-0.5">
-                        Hoa hồng:{" "}
+                        Hoa hồng ước tính:{" "}
                         <span className="text-gold font-mono-num">
                           {productInfo.commissionStr}
-                        </span>{" "}
-                        ({productInfo.commissionPct})
+                        </span>
                       </p>
                     </div>
                   </div>
                 )}
-                <p className="text-xs text-muted mb-2">Link hoàn tiền của bạn</p>
-                <div className="font-mono-num text-xs sm:text-sm text-mint bg-ink/40 rounded-md px-3 py-2.5 overflow-x-auto scrollbar-thin whitespace-nowrap">
-                  {convertedUrl}
-                </div>
-                <div className="flex gap-2 mt-2">
+                <p className="text-xs text-muted mb-3">
+                  Link hoàn tiền đã được tạo thành công — bấm "Mua Ngay" để đặt hàng nhé!
+                </p>
+                <div className="flex gap-2.5">
+                  <a
+                    href={convertedUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 text-center bg-[#7fc99a] hover:bg-[#6fbb8b] text-white text-sm font-bold rounded-lg px-3.5 py-3 shadow-md shadow-[#7fc99a]/30 transition-all active:scale-[0.98] cursor-pointer"
+                  >
+                    🛍️ Mua Ngay
+                  </a>
                   <button
                     onClick={handleCopy}
-                    className="flex-1 sm:flex-none bg-panel-2 hover:bg-border text-cream text-xs font-medium rounded-md px-3.5 py-2.5 sm:py-2 transition-colors cursor-pointer"
+                    className="flex-1 bg-white hover:bg-white/90 text-ink border border-border text-sm font-semibold rounded-lg px-3.5 py-3 transition-all active:scale-[0.98] cursor-pointer"
                   >
-                    {copied ? "Đã chép ✓" : "Sao chép"}
-                  </button>
-                  <button
-                    onClick={handleShare}
-                    className="flex-1 sm:flex-none bg-gold hover:bg-gold-soft text-ink text-xs font-semibold rounded-md px-3.5 py-2.5 sm:py-2 transition-colors cursor-pointer"
-                  >
-                    Chia sẻ
+                    {copied ? "Đã chép ✓" : "📋 Sao chép"}
                   </button>
                 </div>
-                <p className="text-xs text-muted mt-2">
-                  Đơn hàng phát sinh từ link này sẽ tự động gắn với My ID{" "}
-                  <span className="text-gold font-mono-num">{user.myId}</span> để bạn theo dõi bên dưới.
-                </p>
+
+                <div className="mt-4 bg-surface/70 border border-border rounded-lg px-4 py-3.5 space-y-1.5">
+                  <p className="text-xs font-semibold text-highlight mb-1">Lưu ý để đơn được ghi nhận:</p>
+                  <p className="text-xs text-muted">1. Xóa sản phẩm này khỏi giỏ hàng (nếu có) ✅</p>
+                  <p className="text-xs text-muted">2. Bấm link bỏ giỏ hoặc mua ngay ✅</p>
+                  <p className="text-xs text-muted">3. Thao tác chậm lại để Shopee ghi nhận đơn ✅</p>
+                  <p className="text-xs text-muted">4. Không xem live trước hoặc sau khi bấm link ✅</p>
+                  <p className="text-xs text-muted">
+                    5. Không bấm vào link mã giảm giá của người khác sau khi bấm link ✅
+                  </p>
+                </div>
               </div>
             )}
           </div>
