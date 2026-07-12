@@ -116,9 +116,121 @@ body {
   --danger: #d94f70;
   --highlight: #e0417c;
 
-  background: linear-gradient(160deg, #fff3f8 0%, #ffe6f0 45%, #ffd7e7 100%);
+  --bg-grad-1: #fff3f8;
+  --bg-grad-2: #ffe6f0;
+  --bg-grad-3: #ffd7e7;
+
+  background: linear-gradient(160deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 45%, var(--bg-grad-3) 100%);
   background-attachment: fixed;
   color: var(--cream);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Bảng chọn giao diện (theme) — người dùng bấm 1 trong 6 màu ở
+   góc trên bên phải thẻ đăng nhập, lựa chọn được lưu và đồng bộ
+   xuyên suốt cả trang đăng nhập lẫn dashboard sau khi đăng nhập.
+   ───────────────────────────────────────────────────────────── */
+.login-pink.theme-purple {
+  --panel-2: #ecdcfb;
+  --border: #ddc7f5;
+  --gold: #a97fd1;
+  --gold-soft: #c9a6f2;
+  --mint: #d8c2f5;
+  --danger: #d94f70;
+  --highlight: #8b5fbf;
+  --bg-grad-1: #f8f3ff;
+  --bg-grad-2: #f1e6ff;
+  --bg-grad-3: #e9d9ff;
+}
+
+.login-pink.theme-blue {
+  --panel-2: #dff1fb;
+  --border: #bfe3f7;
+  --gold: #5fb3e0;
+  --gold-soft: #9fd0f0;
+  --mint: #bfe6f2;
+  --danger: #d9704f;
+  --highlight: #2f8fd1;
+  --bg-grad-1: #f2fbff;
+  --bg-grad-2: #e6f6ff;
+  --bg-grad-3: #d9f0ff;
+}
+
+.login-pink.theme-white {
+  --ink: #33363b;
+  --surface: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #eef0f2;
+  --border: #e2e5e9;
+  --gold: #b7bcc4;
+  --gold-soft: #d7dbe0;
+  --mint: #cfd3d8;
+  --cream: #33363b;
+  --muted: #8a9098;
+  --danger: #d94f4f;
+  --highlight: #6f7580;
+  --bg-grad-1: #ffffff;
+  --bg-grad-2: #f7f8f9;
+  --bg-grad-3: #eef0f2;
+}
+
+.login-pink.theme-pink {
+  --panel-2: #ffdcec;
+  --border: #f6c3da;
+  --gold: #ee6f9d;
+  --gold-soft: #f593b8;
+  --mint: #f7a8c4;
+  --danger: #d94f70;
+  --highlight: #e0417c;
+  --bg-grad-1: #fff3f8;
+  --bg-grad-2: #ffe6f0;
+  --bg-grad-3: #ffd7e7;
+}
+
+.login-pink.theme-orange {
+  --panel-2: #fdecd6;
+  --border: #fadfc0;
+  --gold: #ee9142;
+  --gold-soft: #f5c08a;
+  --mint: #f7d3ae;
+  --danger: #d9524f;
+  --highlight: #e8813a;
+  --bg-grad-1: #fff8f0;
+  --bg-grad-2: #ffedd9;
+  --bg-grad-3: #ffe0bd;
+}
+
+.login-pink.theme-yellow {
+  --ink: #4a3f1f;
+  --panel-2: #fbf3d4;
+  --border: #f7e9b8;
+  --gold: #d9a72c;
+  --gold-soft: #e7c34d;
+  --mint: #f0dd8f;
+  --danger: #d9704f;
+  --highlight: #c99424;
+  --cream: #4a3f1f;
+  --bg-grad-1: #fffdf0;
+  --bg-grad-2: #fff8d9;
+  --bg-grad-3: #fff0b8;
+}
+
+.theme-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  padding: 0;
+  display: inline-block;
+}
+.theme-swatch:hover {
+  transform: scale(1.12);
+}
+.theme-swatch.is-active {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--highlight);
+  transform: scale(1.12);
 }
 
 .login-pink .field-important {

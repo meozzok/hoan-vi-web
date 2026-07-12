@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { THEMES, DEFAULT_THEME, getStoredTheme, setStoredTheme } from "../../lib/theme";
 
 const ZALO_GROUP_LINK = "https://zalo.me/g/msd7vvhjcwiffr3tyqor";
 const MYID_COMMAND = "#My_ID";
@@ -23,6 +24,19 @@ function CuteCatIcon({ className = "" }) {
       <path d="M42 29 Q37 29 33 30" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
       <ellipse cx="17" cy="16" rx="4" ry="3" fill="#fff" transform="rotate(-18 17 16)" />
       <circle cx="15.5" cy="15.5" r="1.4" fill="currentColor" />
+    </svg>
+  );
+}
+
+/* Quốc kỳ Việt Nam — dùng làm logo góc trên bên trái thẻ đăng nhập. */
+function VietnamFlagIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 30 20" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect width="30" height="20" rx="3" fill="#da251d" />
+      <path
+        d="M15 4.5 L16.76 9.14 L21.75 9.27 L17.82 12.32 L19.27 17.1 L15 14.32 L10.73 17.1 L12.18 12.32 L8.25 9.27 L13.24 9.14 Z"
+        fill="#ffcd00"
+      />
     </svg>
   );
 }
@@ -90,6 +104,18 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [theme, setTheme] = useState(DEFAULT_THEME);
+
+  // Đọc giao diện đã lưu (nếu có) khi trang được tải.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- đồng bộ với localStorage, chỉ chạy 1 lần lúc mount
+    setTheme(getStoredTheme());
+  }, []);
+
+  function handlePickTheme(themeId) {
+    setTheme(themeId);
+    setStoredTheme(themeId);
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -137,7 +163,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="login-pink min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden">
+    <main className={`login-pink theme-${theme} min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden`}>
       {/* Vài chấm/paw trang trí nền cho vui mắt */}
       <PawIcon className="hidden sm:block absolute top-10 left-8 w-8 h-8 text-[var(--highlight)]/15 rotate-[-18deg]" />
       <PawIcon className="hidden sm:block absolute bottom-14 right-10 w-10 h-10 text-[var(--highlight)]/15 rotate-[12deg]" />
@@ -157,16 +183,16 @@ export default function LoginPage() {
 
           {/* Badge trang trí pastel cho sinh động */}
           <div className="flex items-center justify-center flex-wrap gap-2">
-            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full text-[#6a4c93] bg-[#c9a6f2]/30 border border-[#c9a6f2]/40">
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full text-[#5a3d85] bg-[#c9a6f2]/35 border border-[#c9a6f2]/50">
               💜 Hoàn tiền cao
             </span>
-            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full text-[#2a6f96] bg-[#9fd0f0]/30 border border-[#9fd0f0]/40">
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full text-[#1f5c7c] bg-[#9fd0f0]/35 border border-[#9fd0f0]/50">
               💙 Ghi nhận nhanh
             </span>
-            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full text-[#8a6d1f] bg-[#f5e08c]/40 border border-[#f5e08c]/50">
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full text-[#755613] bg-[#f5e08c]/45 border border-[#f5e08c]/60">
               💛 Uy tín
             </span>
-            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full text-[#a5484f] bg-[#f3a6ab]/30 border border-[#f3a6ab]/40">
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full text-[#8f333a] bg-[#f3a6ab]/35 border border-[#f3a6ab]/50">
               ❤️ Chăm sóc tận tâm
             </span>
           </div>
@@ -176,37 +202,35 @@ export default function LoginPage() {
         <div className="ticket-notch bg-panel rounded-2xl border border-border shadow-2xl shadow-black/10 overflow-hidden">
           <div className="p-6 sm:p-8">
             <div className="flex items-center justify-between mb-2">
-              <div className="w-10 h-7 rounded-md bg-gradient-to-br from-gold-soft to-gold flex items-center justify-center">
-                <CuteCatIcon className="w-4 h-4 text-white/90" />
+              <div className="w-10 h-7 rounded-md overflow-hidden shadow-sm shadow-black/10 shrink-0">
+                <VietnamFlagIcon className="w-full h-full" />
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#c9a6f2]" />
-                <span className="w-2 h-2 rounded-full bg-[#9fd0f0]" />
-                <span className="w-2 h-2 rounded-full bg-[#f5e08c]" />
-                <span className="w-2 h-2 rounded-full bg-[#f3a6ab]" />
+              <div className="flex items-center gap-1.5" role="group" aria-label="Chọn màu giao diện">
+                {THEMES.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => handlePickTheme(t.id)}
+                    title={t.label}
+                    aria-label={`Đổi giao diện màu ${t.label}`}
+                    aria-pressed={theme === t.id}
+                    className={`theme-swatch${theme === t.id ? " is-active" : ""}`}
+                    style={{ background: t.swatch }}
+                  />
+                ))}
               </div>
             </div>
 
             {/* Lời chào — đổi ngay theo Tên gợi nhớ khách nhập, mỗi phần 1 màu pastel */}
-            <p className="text-center font-display font-bold text-xl mb-5 transition-all">
-              <span className="text-[#8b6ec9]">Hello</span>{" "}
-              {nickname.trim() ? (
-                <span className="text-[#3f95b0]">{nickname.trim()}</span>
-              ) : (
-                <>
-                  <span className="text-[#3f95b0]">Anh</span>{" "}
-                  <span className="text-[#c99a3f]">/</span>{" "}
-                  <span className="text-[#c1626b]">Chị</span>
-                </>
-              )}{" "}
-              <span>👋</span>
+            <p className="text-center font-display font-bold text-xl mb-5 transition-all text-[#8b6ec9]">
+              Hello {nickname.trim() ? nickname.trim() : "Anh / Chị"} <span>👋</span>
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Tên gợi nhớ */}
               <div>
-                <label className="block text-xs font-semibold text-[#8b6ec9] mb-1.5" htmlFor="nickname">
-                  Tên gợi nhớ
+                <label className="block text-xs font-bold text-[#8b6ec9] mb-1.5" htmlFor="nickname">
+                  Tên gợi nhớ <span className="font-semibold text-muted">(không bắt buộc)</span>
                 </label>
                 <input
                   id="nickname"
@@ -225,44 +249,44 @@ export default function LoginPage() {
                   Cách lấy My ID:
                 </p>
                 <p className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#c9a6f2] text-white text-[9px] font-bold shrink-0">1</span>
-                  <span className="font-semibold">Sao chép câu lệnh</span>
-                  <span className="inline-flex items-center gap-1 font-mono-num bg-highlight/15 text-highlight px-1.5 py-0.5 rounded-md">
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#8b5fbf] text-white text-[9px] font-bold shrink-0">1</span>
+                  <span className="font-bold text-[#4a2337]">Sao chép câu lệnh</span>
+                  <span className="inline-flex items-center gap-1 font-mono-num font-bold bg-highlight/15 text-highlight px-1.5 py-0.5 rounded-md">
                     {MYID_COMMAND}
                     <button
                       type="button"
                       onClick={copyCommand}
                       aria-label="Sao chép câu lệnh My ID"
-                      className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-md bg-[#f3a6ab] text-white hover:brightness-95 active:scale-90 transition-all cursor-pointer"
+                      className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-md bg-[#d9527f] text-white hover:brightness-95 active:scale-90 transition-all cursor-pointer"
                     >
                       {copied ? "✓" : <CopyIcon className="w-3 h-3" />}
                     </button>
                   </span>
-                  {copied && <span className="text-highlight font-semibold">Đã sao chép!</span>}
+                  {copied && <span className="text-highlight font-bold">Đã sao chép!</span>}
                 </p>
                 <p className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#9fd0f0] text-white text-[9px] font-bold shrink-0">2</span>
-                  <span className="font-semibold">Gửi vào nhóm để lấy My ID</span>
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#2f8fd1] text-white text-[9px] font-bold shrink-0">2</span>
+                  <span className="font-bold text-[#4a2337]">Gửi vào nhóm để lấy My ID</span>
                   <a
                     href={ZALO_GROUP_LINK}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setGroupLinkOpened(true)}
-                    className="inline-flex items-center gap-1 bg-highlight hover:bg-[var(--gold-soft)] text-white font-semibold px-2.5 py-1 rounded-full shadow-sm shadow-[var(--highlight)]/30 active:scale-95 transition-all"
+                    className="inline-flex items-center gap-1 bg-highlight hover:bg-[var(--gold-soft)] text-white font-bold px-2.5 py-1 rounded-full shadow-sm shadow-[var(--highlight)]/30 active:scale-95 transition-all"
                   >
                     👉 Gửi Ngay
                   </a>
                 </p>
                 <p className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#f5e08c] text-white text-[9px] font-bold shrink-0">3</span>
-                  <span className="font-semibold">Sao chép ID bot gửi cho bạn và điền vào ô My ID.</span>
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#c99a3f] text-white text-[9px] font-bold shrink-0">3</span>
+                  <span className="font-bold text-[#4a2337]">Sao chép ID bot gửi cho bạn và điền vào ô My ID.</span>
                 </p>
               </div>
 
               {/* My ID */}
               <div>
-                <label className="block text-xs font-semibold text-[#3f95b0] mb-1.5" htmlFor="myId">
-                  My ID
+                <label className="block text-xs font-bold text-[#3f95b0] mb-1.5" htmlFor="myId">
+                  My ID <span className="font-semibold text-danger">(bắt buộc)</span>
                 </label>
                 <input
                   id="myId"
@@ -277,7 +301,7 @@ export default function LoginPage() {
                       : "bg-surface/70 border-border opacity-60 focus:border-[#3f95b0] focus:opacity-100"
                   }`}
                 />
-                <p className="text-[11px] text-[#c1626b] mt-1.5 leading-snug flex items-start gap-1">
+                <p className="text-[11px] text-[#c1626b] font-semibold mt-1.5 leading-snug flex items-start gap-1">
                   <span>💗</span>
                   <span>
                     Lưu ý: Nhập đúng My ID bot gửi cho bạn trong nhóm Zalo để ghi nhận đơn hàng
@@ -287,7 +311,7 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <p className="text-sm text-danger bg-danger/10 border border-danger/30 rounded-lg px-3 py-2">
+                <p className="text-sm font-bold text-danger bg-danger/10 border border-danger/30 rounded-lg px-3 py-2">
                   {error}
                 </p>
               )}
@@ -295,7 +319,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#7fc99a] hover:bg-[#6fbb8b] text-white font-bold rounded-xl py-3 text-sm tracking-wide shadow-lg shadow-[#7fc99a]/40 transition-all disabled:opacity-60 cursor-pointer mt-2 active:scale-[0.98] flex items-center justify-center gap-2"
+                className="w-full bg-[#4f9e6e] hover:bg-[#458a5f] text-white font-extrabold rounded-xl py-3 text-base tracking-wide shadow-lg shadow-[#4f9e6e]/40 transition-all disabled:opacity-60 cursor-pointer mt-2 active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -310,7 +334,7 @@ export default function LoginPage() {
                 )}
               </button>
 
-              {/* Liên hệ hỗ trợ + lời chào nhỏ */}
+              {/* Liên hệ hỗ trợ */}
               <div className="text-center pt-1 space-y-1">
                 <p className="text-[11px] text-muted">
                   Liên hệ hỗ trợ:{" "}
@@ -318,13 +342,10 @@ export default function LoginPage() {
                     href="https://zalo.me/0397088175"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#3f95b0] font-semibold hover:underline"
+                    className="text-[#3f95b0] font-bold hover:underline"
                   >
                     Zalo (0397088175)
                   </a>
-                </p>
-                <p className="text-xs font-display font-semibold text-[#c1626b]">
-                  Hello {nickname.trim() ? nickname.trim() : "Anh / Chị"} 🌷
                 </p>
               </div>
             </form>
