@@ -460,7 +460,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   </div>
                 )}
                 <p className="text-xs text-muted mb-3">
-                  Link hoàn tiền đã được tạo thành công — bấm &quot;Mua Ngay&quot; để đặt hàng nhé!
+                  Link hoàn tiền đã được tạo thành công ✅
                 </p>
                 <div className="flex gap-2.5">
                   <a
@@ -481,11 +481,11 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
                 <div className="mt-4 bg-surface/70 border border-border rounded-lg px-4 py-3.5 space-y-1.5">
                   <p className="text-xs font-semibold text-highlight mb-1">Lưu ý để đơn được ghi nhận:</p>
-                  <p className="text-[11px] text-muted">1. Xóa sản phẩm này khỏi giỏ hàng (nếu có) ✅</p>
-                  <p className="text-[11px] text-muted">2. Bấm link bỏ giỏ hoặc mua ngay ✅</p>
-                  <p className="text-[11px] text-muted">3. Thao tác chậm lại để Shopee ghi nhận đơn ✅</p>
-                  <p className="text-[11px] text-muted">4. Không xem live trước hoặc sau khi bấm link ✅</p>
-                  <p className="text-[11px] text-muted">
+                  <p className="text-[13px] text-muted">1. Xóa sản phẩm này khỏi giỏ hàng (nếu có) ✅</p>
+                  <p className="text-[13px] text-muted">2. Bấm link bỏ giỏ hoặc mua ngay ✅</p>
+                  <p className="text-[13px] text-muted">3. Thao tác chậm lại để Shopee ghi nhận đơn ✅</p>
+                  <p className="text-[13px] text-muted">4. Không xem live trước hoặc sau khi bấm link ✅</p>
+                  <p className="text-[13px] text-muted">
                     5. Không bấm vào link mã giảm giá của người khác sau khi bấm link ✅
                   </p>
                 </div>
@@ -560,12 +560,12 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             <p className="font-mono-num text-sm">{formatDate(order.completedAt)}</p>
                           </div>
                         </div>
-                        <div className="flex items-start justify-between gap-2 mt-3">
-                          <div>
+                        <div className="grid grid-cols-3 gap-3 mt-3">
+                          <div className="text-right">
                             <p className="text-[11px]" style={{ color: AMOUNT_COLORS.gross }}>Hoa hồng</p>
                             <p className="font-mono-num text-sm font-semibold" style={{ color: AMOUNT_COLORS.gross }}>{formatVnd(gross)}</p>
                           </div>
-                          <div>
+                          <div className="text-right">
                             <p className="text-[11px]" style={{ color: AMOUNT_COLORS.afterTax }}>Sau thuế 11%</p>
                             <p className="font-mono-num text-sm font-semibold" style={{ color: AMOUNT_COLORS.afterTax }}>{formatVnd(afterTax)}</p>
                           </div>
@@ -784,7 +784,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   <div>
                     <p className="text-xs text-muted mb-1">🟢 Có thể rút ngay</p>
                     <p className="font-mono-num text-lg font-semibold text-[#16c261]">
-                      {formatVnd(wallet.coTheRut)}
+                      {formatVnd(wallet.coTheRutHien)}
                     </p>
                   </div>
                   <div>
@@ -809,6 +809,21 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             Tạo yêu cầu rút tiền và Admin sẽ chuyển tiền cho {displayName} trong thời gian sớm nhất có thể.
           </p>
         )}
+
+        {/* Liên hệ hỗ trợ — đồng bộ với trang đăng nhập, hiện ở cả 3 tab */}
+        <div className="text-center pt-3 pb-2">
+          <p className="text-[11px] text-muted">
+            Liên hệ hỗ trợ:{" "}
+            <a
+              href="https://zalo.me/0902431867"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#3f95b0] font-bold hover:underline"
+            >
+              Zalo (0902431867)
+            </a>
+          </p>
+        </div>
       </div>
 
       {/* Thanh chuyển tab cố định phía dưới màn hình (kiểu app di động) */}

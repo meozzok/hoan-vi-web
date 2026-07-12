@@ -302,10 +302,10 @@ export default function LoginPage() {
                   }`}
                 />
                 <p className="text-[11px] text-[#c1626b] font-semibold mt-1.5 leading-snug flex items-start gap-1">
-                  <span>💗</span>
+                  <span>⚠️</span>
                   <span>
                     Lưu ý: Nhập đúng My ID bot gửi cho bạn trong nhóm Zalo để ghi nhận đơn hàng
-                    và ví tiền.
+                    và ví tiền!
                   </span>
                 </p>
               </div>
@@ -339,12 +339,12 @@ export default function LoginPage() {
                 <p className="text-[11px] text-muted">
                   Liên hệ hỗ trợ:{" "}
                   <a
-                    href="https://zalo.me/0397088175"
+                    href="https://zalo.me/0902431867"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#3f95b0] font-bold hover:underline"
                   >
-                    Zalo (0397088175)
+                    Zalo (0902431867)
                   </a>
                 </p>
               </div>
