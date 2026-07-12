@@ -12,6 +12,7 @@
   --cream: #f3efe4;
   --muted: #93aba1;
   --danger: #e77a5f;
+  --highlight: var(--gold);
 }
 
 @theme inline {
@@ -26,6 +27,7 @@
   --color-cream: var(--cream);
   --color-muted: var(--muted);
   --color-danger: var(--danger);
+  --color-highlight: var(--highlight);
   --font-display: var(--font-display);
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);
@@ -94,4 +96,38 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 999px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Bảng màu Hồng Nhẹ (nhẹ mắt) — chỉ áp dụng riêng cho trang
+   đăng nhập / đăng ký (.login-pink), không ảnh hưởng dashboard.
+   ───────────────────────────────────────────────────────────── */
+.login-pink {
+  --ink: #4a2337;
+  --surface: #fff6fa;
+  --panel: #fffbfd;
+  --panel-2: #ffdcec;
+  --border: #f6c3da;
+  --gold: #ee6f9d;
+  --gold-soft: #f593b8;
+  --mint: #f7a8c4;
+  --cream: #4a2337;
+  --muted: #b3798f;
+  --danger: #d94f70;
+  --highlight: #e0417c;
+
+  background: linear-gradient(160deg, #fff3f8 0%, #ffe6f0 45%, #ffd7e7 100%);
+  background-attachment: fixed;
+  color: var(--cream);
+}
+
+.login-pink .field-important {
+  box-shadow: 0 0 0 3px rgba(224, 65, 124, 0.08);
+}
+.login-pink .field-important:focus {
+  box-shadow: 0 0 0 3px rgba(224, 65, 124, 0.16);
+}
+.login-pink .ticket-notch::before,
+.login-pink .ticket-notch::after {
+  background: #ffe6f0;
 }

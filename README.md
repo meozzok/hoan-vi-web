@@ -4,7 +4,10 @@ Web app Next.js, deploy trên Vercel. Người dùng đăng nhập bằng **My I
 tự động gắn My ID làm `sub_id`, rồi tra cứu **đơn hàng** và **ví tiền** của mình.
 
 ## Tính năng
-- Đăng ký / đăng nhập bằng **My ID + mật khẩu** (không dùng Google/Facebook)
+- Đăng nhập bằng **Tên đăng nhập** (không cần mật khẩu). Quên tên đăng nhập → đăng nhập lại bằng
+  **My ID + Mã đăng nhập** dùng 1 lần (xem `migration-add-username-and-login-codes.sql`)
+- Đăng ký bằng **Tên đăng nhập** (định dạng `TênZalo-4 số cuối SĐT`, vd `PhuongThao-6789`) + **My ID**
+  (dãy số lấy từ bot Zalo qua lệnh `#My_ID`). Mỗi My ID chỉ đăng ký được 1 tên.
 - Mỗi My ID là duy nhất, dùng làm `sub_id` gắn vào mọi link Shopee đã chuyển
 - Ô chuyển link Shopee → sinh link mới có gắn My ID (đang ở chế độ demo, xem phần "Nối API thật" bên dưới)
 - Ô đơn hàng: danh sách đơn hàng gắn với My ID, trạng thái Chờ xác nhận / Đã xác nhận / Đã cộng ví / Đã huỷ
