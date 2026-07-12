@@ -32,39 +32,29 @@ export async function POST(request) {
         );
       }
 
-      const { data: existing, error: findError } = await supabase
+      // Dùng upsert (INSERT ... ON CONFLICT) để gộp "tìm + tạo/ghi đè" thành
+      // MỘT round-trip duy nhất tới Supabase thay vì 2 round-trip (select rồi
+      // update/insert riêng) như trước — đây là điểm chính giúp đăng nhập
+      // nhanh hơn rõ rệt.
+      const { data: upserted, error: upsertError } = await supabase
         .from("users")
-        .select("my_id, display_name")
-        .eq("my_id", myId)
-        .maybeSingle();
-
-      if (findError) throw findError;
-
-      if (existing) {
-        // My ID đã tồn tại — nếu tên gợi nhớ mới khác tên cũ thì ghi đè bằng tên mới nhất.
-        const nextDisplayName = nickname || existing.display_name;
-        const { data: updated, error: updateError } = await supabase
-          .from("users")
-          .update({ display_name: nextDisplayName, updated_at: new Date().toISOString() })
-          .eq("my_id", myId)
-          .select("my_id, display_name")
-          .single();
-        if (updateError) throw updateError;
-        user = updated;
-      } else {
-        // My ID chưa từng đăng nhập — tạo tài khoản mới ngay lần này.
-        const { data: created, error: insertError } = await supabase
-          .from("users")
-          .insert({
+        .upsert(
+          {
             my_id: myId,
-            display_name: nickname || myId,
+            ...(nickname ? { display_name: nickname } : {}),
             updated_at: new Date().toISOString(),
-          })
-          .select("my_id, display_name")
-          .single();
-        if (insertError) throw insertError;
-        user = created;
-      }
+          },
+          { onConflict: "my_id" }
+        )
+        .select("my_id, display_name")
+        .single();
+
+      if (upsertError) throw upsertError;
+
+      user = {
+        my_id: upserted.my_id,
+        display_name: upserted.display_name || nickname || upserted.my_id,
+      };
     } else {
       // Chỉ có tên gợi nhớ (đăng nhập lại không cần lấy lại My ID) —
       // tìm tài khoản có tên gợi nhớ này, ưu tiên tài khoản đăng nhập gần nhất.
@@ -88,11 +78,17 @@ export async function POST(request) {
       }
 
       user = matches[0];
-      const { error: touchError } = await supabase
+
+      // Cập nhật "updated_at" chỉ phục vụ thống kê, KHÔNG ảnh hưởng tới việc
+      // đăng nhập thành công hay không → không await, trả kết quả cho người
+      // dùng ngay để đăng nhập nhanh hơn.
+      supabase
         .from("users")
         .update({ updated_at: new Date().toISOString() })
-        .eq("my_id", user.my_id);
-      if (touchError) throw touchError;
+        .eq("my_id", user.my_id)
+        .then(({ error: touchError }) => {
+          if (touchError) console.error("touch updated_at lỗi:", touchError);
+        });
     }
 
     const token = await createSessionToken({
