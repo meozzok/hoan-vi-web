@@ -20,7 +20,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: "Hoàn Ví — Chuyển link Shopee, nhận hoàn tiền",
+  title: "Hoàn Tiền Phương Thảo 🌷",
   description:
     "Đăng nhập bằng My ID, chuyển link Shopee gắn sub_id, tra cứu đơn hàng và ví tiền hoàn về.",
 };
