@@ -121,6 +121,23 @@ function CopyIcon({ className = "" }) {
   );
 }
 
+function HeartIcon({ className = "", filled = false }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M12 21s-6.7-4.35-9.3-8.2C1.02 10.1 1.7 6.6 4.6 5.2 6.9 4.1 9.4 4.9 12 8c2.6-3.1 5.1-3.9 7.4-2.8 2.9 1.4 3.58 4.9 1.9 7.6C18.7 16.65 12 21 12 21z" />
+    </svg>
+  );
+}
+
 function formatVnd(amount) {
   return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(amount || 0) + "đ";
 }
@@ -156,25 +173,73 @@ function formatDate(value) {
   }).format(d);
 }
 
+function formatDateTime(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
+}
+
 const TABS = [
   { id: "link", label: "Tạo link", Icon: LinkTabIcon },
   { id: "orders", label: "Đơn hàng", Icon: OrdersTabIcon },
   { id: "wallet", label: "Ví Tiền", Icon: WalletTabIcon },
 ];
 
+// Tối đa 10 link được tạo trong 1 lần dùng chế độ "Tạo nhiều link".
+const MAX_MULTI_LINKS = 10;
+
+// Lịch sử link tạo ra được lưu ở máy khách (localStorage), tách riêng theo My ID,
+// vì hệ thống hiện chưa có bảng lưu link ở server — không ảnh hưởng các bảng dữ liệu khác.
+function linkHistoryStorageKey(myId) {
+  return `hoanvi_link_history_${myId || "guest"}`;
+}
+
+function loadLinkHistory(myId) {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(linkHistoryStorageKey(myId));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLinkHistory(myId, list) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(linkHistoryStorageKey(myId), JSON.stringify(list));
+  } catch {
+    // Bỏ qua nếu localStorage đầy/không khả dụng — không làm hỏng luồng tạo link.
+  }
+}
+
 export default function DashboardClient({ user, initialOrders, initialWallet }) {
   const router = useRouter();
   const [orders] = useState(initialOrders || []);
   const [wallet] = useState(initialWallet);
   const [shopeeUrl, setShopeeUrl] = useState("");
-  const [convertedUrl, setConvertedUrl] = useState("");
-  const [productInfo, setProductInfo] = useState(null);
+  const [createMode, setCreateMode] = useState("single"); // "single" | "multi"
+  const [multiUrlsText, setMultiUrlsText] = useState("");
+  const [batchResults, setBatchResults] = useState([]); // kết quả của lần tạo link gần nhất (1 hoặc nhiều link)
   const [convertError, setConvertError] = useState("");
   const [converting, setConverting] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copiedLinkId, setCopiedLinkId] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
   const [theme, setTheme] = useState(DEFAULT_THEME);
   const [activeTab, setActiveTab] = useState("link");
+
+  // Lịch sử link đã tạo (lưu ở máy khách) + tab con Tất cả/Yêu thích + phân trang.
+  const [linkHistory, setLinkHistory] = useState([]);
+  const [historyTab, setHistoryTab] = useState("all"); // "all" | "favorite"
+  const [historyPage, setHistoryPage] = useState(1);
 
   // Đơn hàng: tìm kiếm theo mã đơn / tên sản phẩm + lọc theo trạng thái + phân trang.
   const [orderSearch, setOrderSearch] = useState("");
@@ -196,6 +261,59 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- đồng bộ với localStorage, chỉ chạy 1 lần lúc mount
     setTheme(getStoredTheme());
   }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- đọc lịch sử link đã lưu ở máy khách theo My ID
+    setLinkHistory(loadLinkHistory(user.myId));
+  }, [user.myId]);
+
+  // STT lịch sử: đánh theo thứ tự tạo (link tạo trước có số nhỏ hơn), không đổi khi lọc theo tab.
+  const historyStt = useMemo(() => {
+    const map = new Map();
+    linkHistory.forEach((h, i) => map.set(h.id, i + 1));
+    return map;
+  }, [linkHistory]);
+
+  // Danh sách hiển thị: mới nhất lên trước.
+  const historyNewestFirst = useMemo(() => [...linkHistory].reverse(), [linkHistory]);
+  const historyFavoriteCount = useMemo(
+    () => linkHistory.filter((h) => h.favorite).length,
+    [linkHistory]
+  );
+  const historyFiltered = useMemo(
+    () => (historyTab === "favorite" ? historyNewestFirst.filter((h) => h.favorite) : historyNewestFirst),
+    [historyNewestFirst, historyTab]
+  );
+  const historyTotalPages = Math.max(1, Math.ceil(historyFiltered.length / PAGE_SIZE));
+  const pagedHistory = useMemo(() => {
+    const start = (historyPage - 1) * PAGE_SIZE;
+    return historyFiltered.slice(start, start + PAGE_SIZE);
+  }, [historyFiltered, historyPage]);
+
+  // Map id -> item lịch sử đầy đủ, dùng để hiển thị khối "vừa tạo" (batchResults chỉ giữ id + trạng thái).
+  const historyById = useMemo(() => {
+    const map = new Map();
+    linkHistory.forEach((h) => map.set(h.id, h));
+    return map;
+  }, [linkHistory]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- kẹp lại trang hiện tại nếu danh sách thu hẹp (vd sau khi lọc yêu thích)
+    setHistoryPage((p) => Math.min(p, historyTotalPages));
+  }, [historyTotalPages]);
+
+  function handleHistoryTabChange(tab) {
+    setHistoryTab(tab);
+    setHistoryPage(1);
+  }
+
+  function toggleFavoriteLink(id) {
+    setLinkHistory((prev) => {
+      const merged = prev.map((h) => (h.id === id ? { ...h, favorite: !h.favorite } : h));
+      saveLinkHistory(user.myId, merged);
+      return merged;
+    });
+  }
 
   const filteredOrders = useMemo(() => {
     const q = orderSearch.trim().toLowerCase();
@@ -260,48 +378,124 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
   function handleClearUrl() {
     setShopeeUrl("");
-    setConvertedUrl("");
-    setProductInfo(null);
+    setMultiUrlsText("");
+    setBatchResults([]);
     setConvertError("");
-    setCopied(false);
   }
 
-  async function handleConvert(e) {
-    e.preventDefault();
+  function handleCreateModeChange(mode) {
+    setCreateMode(mode);
     setConvertError("");
-    setConvertedUrl("");
-    setProductInfo(null);
-    setCopied(false);
-    setConverting(true);
+  }
+
+  // Bóc nhiều link từ nội dung dán vào (mỗi link có thể cách nhau bởi xuống dòng
+  // hoặc khoảng trắng) và tự tách thành từng dòng riêng, tối đa MAX_MULTI_LINKS link.
+  function handleMultiPaste(e) {
+    const text = e.clipboardData?.getData("text");
+    if (!text) return;
+    const tokens = text.split(/\s+/).map((t) => t.trim()).filter(Boolean);
+    if (tokens.length <= 1) return; // 1 link duy nhất -> để trình duyệt dán bình thường
+    e.preventDefault();
+    setMultiUrlsText((prev) => {
+      const existing = prev.split("\n").map((s) => s.trim()).filter(Boolean);
+      const merged = [...existing, ...tokens].slice(0, MAX_MULTI_LINKS);
+      return merged.join("\n");
+    });
+  }
+
+  const multiUrlsCount = useMemo(
+    () => multiUrlsText.split("\n").map((s) => s.trim()).filter(Boolean).length,
+    [multiUrlsText]
+  );
+
+  // Gọi API chuyển 1 link — không throw, luôn trả về trạng thái để Promise.all không bị chặn bởi 1 link lỗi.
+  async function convertOneLink(url) {
     try {
       const res = await fetch("/api/convert-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shopeeUrl }),
+        body: JSON.stringify({ shopeeUrl: url }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setConvertError(data.error || "Không thể chuyển link này.");
-      } else {
-        setConvertedUrl(data.convertedUrl);
-        setProductInfo({
-          productName: data.productName,
-          commissionStr: data.commissionStr,
-          commissionPct: data.commissionPct,
-          image: data.image,
-        });
+        return { url, status: "error", error: data.error || "Không thể chuyển link này." };
       }
+      return { url, status: "success", data };
     } catch {
-      setConvertError("Không thể kết nối máy chủ.");
+      return { url, status: "error", error: "Không thể kết nối máy chủ." };
+    }
+  }
+
+  async function handleCreateLinks(e) {
+    e.preventDefault();
+    setConvertError("");
+    setBatchResults([]);
+
+    let urls = [];
+    if (createMode === "single") {
+      const single = shopeeUrl.trim();
+      if (!single) {
+        setConvertError("Vui lòng nhập link Shopee.");
+        return;
+      }
+      urls = [single];
+    } else {
+      urls = multiUrlsText.split("\n").map((s) => s.trim()).filter(Boolean);
+      if (urls.length === 0) {
+        setConvertError("Vui lòng nhập ít nhất 1 link Shopee.");
+        return;
+      }
+      if (urls.length > MAX_MULTI_LINKS) {
+        urls = urls.slice(0, MAX_MULTI_LINKS);
+      }
+    }
+
+    setConverting(true);
+    try {
+      const results = await Promise.all(urls.map(convertOneLink));
+      const nowIso = new Date().toISOString();
+      const stamp = Date.now();
+      const newHistoryItems = [];
+
+      const display = results.map((r, idx) => {
+        if (r.status === "error") {
+          return { key: `err_${stamp}_${idx}`, status: "error", url: r.url, error: r.error };
+        }
+        const item = {
+          id: `${stamp}_${idx}_${Math.random().toString(36).slice(2, 7)}`,
+          productName: r.data.productName || "",
+          commissionStr: r.data.commissionStr || "—",
+          commissionPct: r.data.commissionPct || "—",
+          image: r.data.image || null,
+          convertedUrl: r.data.convertedUrl,
+          originalUrl: r.url,
+          createdAt: nowIso,
+          favorite: false,
+        };
+        newHistoryItems.push(item);
+        return { key: item.id, status: "success", historyId: item.id };
+      });
+
+      if (newHistoryItems.length > 0) {
+        setLinkHistory((prev) => {
+          const merged = [...prev, ...newHistoryItems];
+          saveLinkHistory(user.myId, merged);
+          return merged;
+        });
+      } else {
+        setConvertError("Không tạo được link nào. Vui lòng kiểm tra lại link đã nhập.");
+      }
+
+      setBatchResults(display);
     } finally {
       setConverting(false);
     }
   }
 
-  async function handleCopy() {
-    await navigator.clipboard.writeText(convertedUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
+  async function handleCopyLink(url, id) {
+    await navigator.clipboard.writeText(url);
+    setCopiedLinkId(id);
+    setTimeout(() => setCopiedLinkId(""), 1800);
   }
 
   async function handleLogout() {
@@ -435,33 +629,81 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </div>
             </div>
 
-            <form onSubmit={handleConvert} className="space-y-3">
-              <div className="relative">
-                <input
-                  type="url"
-                  required
-                  value={shopeeUrl}
-                  onChange={(e) => setShopeeUrl(e.target.value)}
-                  placeholder="https://shopee.vn/..."
-                  className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-11 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60"
-                />
-                <button
-                  type="button"
-                  onClick={handlePasteUrl}
-                  aria-label="Dán link từ clipboard"
-                  title="Dán link"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 rounded-md bg-panel-2 text-gold hover:brightness-95 active:scale-90 transition-all cursor-pointer"
-                >
-                  <PasteIcon className="w-4 h-4" />
-                </button>
-              </div>
+            {/* Chọn chế độ: tạo 1 link hoặc nhiều link cùng lúc (tối đa 10 link) */}
+            <div className="flex items-center gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => handleCreateModeChange("single")}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
+                  createMode === "single"
+                    ? "bg-[#8b5fbf] text-white shadow-sm"
+                    : "bg-surface border border-border text-muted hover:text-cream"
+                }`}
+              >
+                Tạo 1 link
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCreateModeChange("multi")}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
+                  createMode === "multi"
+                    ? "bg-[#8b5fbf] text-white shadow-sm"
+                    : "bg-surface border border-border text-muted hover:text-cream"
+                }`}
+              >
+                Tạo nhiều link
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateLinks} className="space-y-3">
+              {createMode === "single" ? (
+                <div className="relative">
+                  <input
+                    type="url"
+                    required
+                    value={shopeeUrl}
+                    onChange={(e) => setShopeeUrl(e.target.value)}
+                    placeholder="https://shopee.vn/..."
+                    className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-11 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60"
+                  />
+                  <button
+                    type="button"
+                    onClick={handlePasteUrl}
+                    aria-label="Dán link từ clipboard"
+                    title="Dán link"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 rounded-md bg-panel-2 text-gold hover:brightness-95 active:scale-90 transition-all cursor-pointer"
+                  >
+                    <PasteIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <textarea
+                    required
+                    rows={5}
+                    value={multiUrlsText}
+                    onChange={(e) => setMultiUrlsText(e.target.value)}
+                    onPaste={handleMultiPaste}
+                    placeholder={`https://shopee.vn/...\nhttps://shopee.vn/...\n(mỗi link 1 dòng, tối đa ${MAX_MULTI_LINKS} link)`}
+                    className="w-full bg-surface border border-border rounded-lg px-3.5 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60 resize-y"
+                  />
+                  <p className={`text-xs mt-1.5 ${multiUrlsCount > MAX_MULTI_LINKS ? "text-danger font-semibold" : "text-muted"}`}>
+                    {multiUrlsCount}/{MAX_MULTI_LINKS} link
+                    {multiUrlsCount > MAX_MULTI_LINKS ? " — chỉ 10 link đầu tiên được tạo" : ""}
+                  </p>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <button
                   type="submit"
                   disabled={converting}
                   className="flex-1 sm:flex-none sm:w-auto bg-[#8b5fbf] hover:bg-[#9d72d1] text-white font-bold rounded-lg px-5 py-2.5 text-sm shadow-md shadow-[#8b5fbf]/40 transition-colors disabled:opacity-60 disabled:animate-none cursor-pointer animate-pulse"
                 >
-                  {converting ? "Đang tạo..." : "Tạo link hoàn tiền"}
+                  {converting
+                    ? "Đang tạo..."
+                    : createMode === "multi" && multiUrlsCount > 1
+                    ? `Tạo ${Math.min(multiUrlsCount, MAX_MULTI_LINKS)} link hoàn tiền`
+                    : "Tạo link hoàn tiền"}
                 </button>
                 <button
                   type="button"
@@ -482,60 +724,95 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </p>
             )}
 
-            {convertedUrl && (
-              <div className="mt-5 bg-surface border border-border rounded-lg p-4">
-                {productInfo && (productInfo.image || productInfo.productName) && (
-                  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border/60">
-                    {productInfo.image ? (
-                      <img
-                        src={productInfo.image}
-                        alt={productInfo.productName || "Sản phẩm Shopee"}
-                        className="w-14 h-14 rounded-lg object-cover border border-border shrink-0"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <div className="w-14 h-14 rounded-lg bg-panel-2 border border-border shrink-0 flex items-center justify-center text-muted text-xs">
-                        Không ảnh
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      {productInfo.productName && (
-                        <p className="text-base font-bold">
-                          {truncateChars(productInfo.productName, 60)}
+            {batchResults.length > 0 && (
+              <div className="mt-5 space-y-3">
+                {batchResults.map((r, idx) => {
+                  if (r.status === "error") {
+                    return (
+                      <div
+                        key={r.key}
+                        className="bg-danger/10 border border-danger/30 rounded-lg p-4"
+                      >
+                        <p className="text-xs font-bold text-danger mb-1">
+                          Link #{idx + 1} — không tạo được
                         </p>
-                      )}
-                      <p className="text-xs mt-0.5">
-                        <span className="text-danger">Hoa hồng ước tính:</span>{" "}
-                        <span className="text-[#1a7a3d] font-bold font-mono-num">
-                          {productInfo.commissionStr}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <p className="text-xs text-muted mb-3">
-                  Link hoàn tiền đã được tạo thành công ✅
-                </p>
-                <div className="flex gap-2.5">
-                  <a
-                    href={convertedUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 text-center bg-[#16c261] hover:bg-[#12a852] text-white text-sm font-bold rounded-lg px-3.5 py-3 shadow-md shadow-[#16c261]/40 transition-all active:scale-[0.98] cursor-pointer animate-pulse"
-                  >
-                    🛍️ Mua Ngay
-                  </a>
-                  <button
-                    onClick={handleCopy}
-                    className="flex-1 bg-white hover:bg-white/90 text-ink border border-border text-sm font-semibold rounded-lg px-3.5 py-3 transition-all active:scale-[0.98] cursor-pointer"
-                  >
-                    {copied ? "Đã chép ✓" : "📋 Sao chép"}
-                  </button>
-                </div>
+                        <p className="text-xs text-muted break-all mb-1.5">{r.url}</p>
+                        <p className="text-sm text-danger">{r.error}</p>
+                      </div>
+                    );
+                  }
+                  const item = historyById.get(r.historyId);
+                  if (!item) return null;
+                  return (
+                    <div
+                      key={r.key}
+                      className="relative bg-surface border border-border rounded-lg p-4"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleFavoriteLink(item.id)}
+                        aria-label={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                        title={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                        className="absolute top-3 right-3 inline-flex items-center justify-center w-8 h-8 rounded-full bg-panel border border-border text-[#ef4444] hover:brightness-95 active:scale-90 transition-all cursor-pointer"
+                      >
+                        <HeartIcon className="w-4 h-4" filled={item.favorite} />
+                      </button>
 
-                <div className="mt-4 bg-surface/70 border border-border rounded-lg px-4 py-3.5 space-y-1.5">
+                      <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border/60 pr-10">
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.productName || "Sản phẩm Shopee"}
+                            className="w-14 h-14 rounded-lg object-cover border border-border shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <div className="w-14 h-14 rounded-lg bg-panel-2 border border-border shrink-0 flex items-center justify-center text-muted text-xs">
+                            Không ảnh
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-muted font-mono-num mb-0.5">
+                            #{idx + 1}
+                          </p>
+                          {item.productName && (
+                            <p className="text-base font-bold">
+                              {truncateChars(item.productName, 60)}
+                            </p>
+                          )}
+                          <p className="text-xs mt-0.5">
+                            <span className="text-danger">Hoa hồng ước tính:</span>{" "}
+                            <span className="text-[#1a7a3d] font-bold font-mono-num">
+                              {item.commissionStr}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2.5">
+                        <a
+                          href={item.convertedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 text-center bg-[#16c261] hover:bg-[#12a852] text-white text-sm font-bold rounded-lg px-3.5 py-3 shadow-md shadow-[#16c261]/40 transition-all active:scale-[0.98] cursor-pointer"
+                        >
+                          🛍️ Mua Ngay
+                        </a>
+                        <button
+                          onClick={() => handleCopyLink(item.convertedUrl, item.id)}
+                          className="flex-1 bg-white hover:bg-white/90 text-ink border border-border text-sm font-semibold rounded-lg px-3.5 py-3 transition-all active:scale-[0.98] cursor-pointer"
+                        >
+                          {copiedLinkId === item.id ? "Đã chép ✓" : "📋 Sao chép"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Lưu ý dùng chung cho toàn bộ lô link vừa tạo (chỉ hiện 1 lần dù tạo 1 hay nhiều link) */}
+                <div className="bg-surface/70 border border-border rounded-lg px-4 py-3.5 space-y-1.5">
                   <p className="text-xs font-semibold text-highlight mb-1">Lưu ý để đơn được ghi nhận:</p>
                   <p className="text-[14px] italic" style={{ color: "#b28dd9" }}>1. Xóa sản phẩm này khỏi giỏ hàng (nếu có) ✅</p>
                   <p className="text-[14px] italic" style={{ color: "#b28dd9" }}>2. Bấm link bỏ giỏ hoặc mua ngay ✅</p>
@@ -546,6 +823,230 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   </p>
                 </div>
               </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "link" && (
+          <div className="mt-6 bg-panel border border-border rounded-2xl overflow-hidden">
+            <div className="p-5 sm:p-6 pb-4">
+              <p className="font-display font-bold text-lg mb-3">Lịch sử tạo link</p>
+              <div className="flex items-center gap-2 bg-surface border border-border rounded-full p-1.5 w-fit">
+                <button
+                  type="button"
+                  onClick={() => handleHistoryTabChange("all")}
+                  className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all cursor-pointer ${
+                    historyTab === "all"
+                      ? "bg-highlight text-white shadow-sm"
+                      : "text-muted hover:text-cream"
+                  }`}
+                >
+                  Tất cả ({linkHistory.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleHistoryTabChange("favorite")}
+                  className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all cursor-pointer ${
+                    historyTab === "favorite"
+                      ? "bg-highlight text-white shadow-sm"
+                      : "text-muted hover:text-cream"
+                  }`}
+                >
+                  ❤️ Yêu thích ({historyFavoriteCount})
+                </button>
+              </div>
+            </div>
+
+            {pagedHistory.length === 0 ? (
+              <div className="px-6 pb-8 text-center">
+                <p className="text-muted text-sm">
+                  {historyTab === "favorite"
+                    ? "Chưa có sản phẩm yêu thích nào."
+                    : "Chưa có link nào được tạo."}
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Dạng thẻ - dùng trên điện thoại */}
+                <div className="sm:hidden flex flex-col gap-3 p-3 pt-0">
+                  {pagedHistory.map((item) => {
+                    const stt = historyStt.get(item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        className="relative px-4 py-4 rounded-xl border-2 border-border bg-surface/50"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleFavoriteLink(item.id)}
+                          aria-label={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                          title={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                          className="absolute top-3 right-3 inline-flex items-center justify-center w-7 h-7 rounded-full bg-panel border border-border text-[#ef4444] hover:brightness-95 active:scale-90 transition-all cursor-pointer"
+                        >
+                          <HeartIcon className="w-3.5 h-3.5" filled={item.favorite} />
+                        </button>
+                        <div className="flex items-center gap-3 pr-9">
+                          {item.image ? (
+                            <img
+                              src={item.image}
+                              alt={item.productName || "Sản phẩm Shopee"}
+                              className="w-12 h-12 rounded-lg object-cover border border-border shrink-0"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-panel-2 border border-border shrink-0 flex items-center justify-center text-muted text-[10px]">
+                              Không ảnh
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-[11px] text-muted font-mono-num">
+                              {String(stt).padStart(2, "0")}
+                            </p>
+                            <p className="text-sm font-bold truncate">
+                              {truncateChars(item.productName || "Sản phẩm Shopee", 50)}
+                            </p>
+                            <p className="text-xs mt-0.5">
+                              <span className="text-[#1a7a3d] font-bold font-mono-num">
+                                {item.commissionStr}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-3 border border-border rounded-md bg-surface px-2.5 py-1.5">
+                          <p className="font-mono-num text-[11px] text-muted truncate flex-1">
+                            {item.convertedUrl}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyLink(item.convertedUrl, item.id)}
+                            aria-label="Sao chép link"
+                            title="Sao chép link"
+                            className="inline-flex items-center justify-center w-5 h-5 text-muted hover:text-highlight active:scale-90 transition-all cursor-pointer shrink-0"
+                          >
+                            {copiedLinkId === item.id ? (
+                              <span className="text-[10px] text-mint">✓</span>
+                            ) : (
+                              <CopyIcon className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                        <p className="text-[11px] text-muted mt-2">
+                          {formatDateTime(item.createdAt)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Dạng bảng - dùng từ màn hình sm trở lên */}
+                <div className="hidden sm:block overflow-x-auto scrollbar-thin">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-t border-border text-ink text-xs uppercase tracking-wider">
+                        <th className="text-left font-bold px-6 py-3">STT</th>
+                        <th className="text-left font-bold px-4 py-3">Sản phẩm</th>
+                        <th className="text-right font-bold px-4 py-3">Hoa hồng</th>
+                        <th className="text-left font-bold px-4 py-3">Link</th>
+                        <th className="text-right font-bold px-4 py-3">Ngày tạo</th>
+                        <th className="text-right font-bold px-6 py-3">Yêu thích</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pagedHistory.map((item) => {
+                        const stt = historyStt.get(item.id);
+                        return (
+                          <tr key={item.id} className="border-t border-border/60">
+                            <td className="px-6 py-3.5 font-mono-num text-muted text-xs">
+                              {String(stt).padStart(2, "0")}
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <div className="flex items-center gap-2.5">
+                                {item.image ? (
+                                  <img
+                                    src={item.image}
+                                    alt={item.productName || "Sản phẩm Shopee"}
+                                    className="w-9 h-9 rounded-md object-cover border border-border shrink-0"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = "none";
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-9 h-9 rounded-md bg-panel-2 border border-border shrink-0" />
+                                )}
+                                <span className="truncate max-w-[220px] inline-block align-top font-bold">
+                                  {truncateChars(item.productName || "Sản phẩm Shopee", 50)}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold text-[#1a7a3d]">
+                              {item.commissionStr}
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono-num text-xs text-muted truncate max-w-[200px] inline-block">
+                                  {item.convertedUrl}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyLink(item.convertedUrl, item.id)}
+                                  aria-label="Sao chép link"
+                                  title="Sao chép link"
+                                  className="inline-flex items-center justify-center w-5 h-5 text-muted hover:text-highlight active:scale-90 transition-all cursor-pointer shrink-0"
+                                >
+                                  {copiedLinkId === item.id ? (
+                                    <span className="text-[10px] text-mint">✓</span>
+                                  ) : (
+                                    <CopyIcon className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3.5 text-right text-muted text-xs">
+                              {formatDateTime(item.createdAt)}
+                            </td>
+                            <td className="px-6 py-3.5 text-right">
+                              <button
+                                type="button"
+                                onClick={() => toggleFavoriteLink(item.id)}
+                                aria-label={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                                title={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                                className="inline-flex items-center justify-center w-7 h-7 rounded-full text-[#ef4444] hover:bg-panel-2 active:scale-90 transition-all cursor-pointer"
+                              >
+                                <HeartIcon className="w-4 h-4" filled={item.favorite} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Phân trang: 10 sản phẩm mỗi trang */}
+                {historyTotalPages > 1 && (
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 px-5 py-5 border-t border-border">
+                    {Array.from({ length: historyTotalPages }).map((_, i) => {
+                      const p = i + 1;
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setHistoryPage(p)}
+                          className={`w-8 h-8 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
+                            historyPage === p
+                              ? "bg-highlight text-white"
+                              : "text-muted hover:text-cream border border-border"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
