@@ -53,11 +53,11 @@ function commissionBreakdown(grossCommission) {
 
 // Màu số tiền cho 3 ô Hoa hồng / Sau thuế / Hoa hồng thực nhận — mỗi ô một màu
 // riêng nhưng cùng một độ sáng/độ rực ngang nhau (không ô nào đậm/nhạt hơn ô nào):
-// Hoa hồng: xanh da trời, Sau thuế: vàng nhẹ, Hoa hồng thực nhận: xanh lá sáng.
+// Hoa hồng: đỏ san hô, Sau thuế: tím, Hoa hồng thực nhận: xanh lá sáng (theo ảnh mẫu).
 // Khung (border) của cả 3 ô dùng chung 1 màu tím nhạt theo tông nền của app.
 const AMOUNT_COLORS = {
-  gross: { solid: "#38bdf8", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
-  afterTax: { solid: "#6ee8b8", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
+  gross: { solid: "#e0524f", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
+  afterTax: { solid: "#a855f7", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
   final80: { solid: "#0ecb81", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
 };
 
@@ -758,8 +758,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 onClick={() => handleCreateModeChange("single")}
                 className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer ${
                   createMode === "single"
-                    ? "bg-[#38bdf8] border-[#0ea5e9] text-white shadow-sm scale-[1.03]"
-                    : "bg-[#e0f2fe] border-[#7dd3fc] text-[#0369a1] hover:brightness-95"
+                    ? "bg-[#ffe8d1] border-[#ffc98a] text-[#b56a12] shadow-sm scale-[1.03]"
+                    : "bg-[#fff6ec] border-[#ffe3c2] text-[#c98a3f] hover:brightness-95"
                 }`}
               >
                 🎀 Tạo 1 link
