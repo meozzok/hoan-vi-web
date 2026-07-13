@@ -636,7 +636,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                       <div key={order.id} className="px-5 py-4 rounded-xl border-2 border-border bg-surface/50">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm font-bold line-clamp-2">
+                            <p className="text-sm font-bold truncate">
                               {orderNumber}.🛍️ {truncateChars(order.productName, 60)}
                             </p>
                             {order.id && (
@@ -726,7 +726,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                               </span>
                             </td>
                             <td className="px-4 py-3.5">
-                              <span className="line-clamp-2 max-w-[280px] inline-block align-top font-bold">
+                              <span className="truncate max-w-[280px] inline-block align-top font-bold">
                                 {orderNumber}.🛍️ {truncateChars(order.productName, 60)}
                               </span>
                             </td>
