@@ -571,7 +571,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     value={orderSearch}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     placeholder="Nhập mã đơn hoặc tên sản phẩm..."
-                    className="w-full bg-transparent pl-4 pr-16 py-2 text-sm outline-none placeholder:text-[#2f6f95]/60 text-ink"
+                    className="w-full bg-transparent pl-4 pr-16 py-2 text-base sm:text-sm outline-none placeholder:text-[#2f6f95]/60 text-ink"
                   />
                   {orderSearch && (
                     <button
@@ -830,7 +830,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                       value={withdrawAmount}
                       onChange={handleWithdrawAmountChange}
                       placeholder="Nhập số tiền muốn rút"
-                      className="flex-1 bg-surface border border-border rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60"
+                      className="flex-1 bg-surface border border-border rounded-lg px-3.5 py-2.5 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60"
                     />
                     <button
                       type="button"
