@@ -57,7 +57,7 @@ function commissionBreakdown(grossCommission) {
 // Khung (border) của cả 3 ô dùng chung 1 màu tím nhạt theo tông nền của app.
 const AMOUNT_COLORS = {
   gross: { solid: "#38bdf8", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
-  afterTax: { solid: "#ffd35c", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
+  afterTax: { solid: "#6ee8b8", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
   final80: { solid: "#0ecb81", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
 };
 
