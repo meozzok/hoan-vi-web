@@ -7,6 +7,31 @@ import { DEFAULT_THEME } from "../../lib/theme";
 const ZALO_GROUP_LINK = "https://zalo.me/g/msd7vvhjcwiffr3tyqor";
 const MYID_COMMAND = "#My_ID";
 
+// Tên gợi nhớ chỉ lưu riêng trên từng điện thoại (localStorage), tách theo
+// My ID — để 2 khách dùng chung 1 My ID trên 2 máy khác nhau không bị ghi
+// đè tên gợi nhớ của nhau (xem thêm ghi chú ở app/api/auth/login/route.js).
+function localNicknameStorageKey(myId) {
+  return `hoanvi_nickname_${myId || "guest"}`;
+}
+
+function loadLocalNickname(myId) {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(localNicknameStorageKey(myId)) || "";
+  } catch {
+    return "";
+  }
+}
+
+function saveLocalNickname(myId, nickname) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(localNicknameStorageKey(myId), nickname);
+  } catch {
+    // Bỏ qua nếu localStorage đầy/không khả dụng.
+  }
+}
+
 /* Icon mèo dễ thương (thiết kế gốc, không phải nhân vật có bản quyền)
    dùng làm điểm nhấn "cute" xuyên suốt trang đăng nhập. */
 function CuteCatIcon({ className = "" }) {
@@ -127,6 +152,14 @@ export default function LoginPage() {
         setError(data.error || "Có lỗi xảy ra, vui lòng thử lại.");
         setLoading(false);
         return;
+      }
+
+      // Lưu tên gợi nhớ riêng trên máy này (không đồng bộ qua server) —
+      // để nếu người khác đăng nhập cùng My ID trên máy khác, tên gợi nhớ
+      // của mỗi người vẫn tách biệt.
+      const trimmedNickname = nickname.trim();
+      if (trimmedNickname) {
+        saveLocalNickname(myId.trim(), trimmedNickname);
       }
 
       // Hiện thông báo "Đăng nhập thành công" đáng yêu trước khi chuyển trang.
@@ -275,7 +308,16 @@ export default function LoginPage() {
                   type="text"
                   inputMode="numeric"
                   value={myId}
-                  onChange={(e) => setMyId(e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e) => {
+                    const next = e.target.value.replace(/[^0-9]/g, "");
+                    setMyId(next);
+                    // Nếu ô tên gợi nhớ đang trống, tự điền tên đã lưu trên máy này
+                    // cho đúng My ID vừa nhập (nếu có) để khách khỏi phải gõ lại.
+                    if (!nickname.trim()) {
+                      const saved = loadLocalNickname(next);
+                      if (saved) setNickname(saved);
+                    }
+                  }}
                   placeholder="VD: 3630821671476852507"
                   className={`field-important w-full font-mono-num border-2 rounded-xl px-3.5 py-2.5 text-base sm:text-sm outline-none transition-all placeholder:text-[11px] placeholder:text-muted/60 ${
                     groupLinkOpened

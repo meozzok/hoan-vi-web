@@ -32,20 +32,20 @@ export async function POST(request) {
 
     const supabase = getSupabaseAdmin();
 
-    // Dùng upsert (INSERT ... ON CONFLICT) để gộp "tìm + tạo/ghi đè" thành
-    // MỘT round-trip duy nhất tới Supabase thay vì 2 round-trip (select rồi
-    // update/insert riêng) như trước — đây là điểm chính giúp đăng nhập
-    // nhanh hơn rõ rệt.
+    // Dùng upsert (INSERT ... ON CONFLICT) để gộp "tìm + tạo" thành MỘT
+    // round-trip duy nhất tới Supabase.
+    //
+    // LƯU Ý: Tên gợi nhớ (nickname) KHÔNG còn được ghi vào cột display_name
+    // dùng chung ở đây nữa — nếu 2 khách cùng dùng chung 1 My ID trên 2 điện
+    // thoại khác nhau, việc ghi đè display_name dùng chung sẽ khiến tên gợi
+    // nhớ của người này "đè" lên tên của người kia. Tên gợi nhớ giờ chỉ được
+    // lưu ở phía trình duyệt (localStorage), riêng theo từng máy — xem
+    // app/login/page.js và app/dashboard/DashboardClient.js.
     const { data: upserted, error: upsertError } = await supabase
       .from("users")
       .upsert(
         {
           my_id: myId,
-          // Chỉ ghi đè tên gợi nhớ khi khách CÓ nhập tên mới ở lượt này —
-          // nếu bỏ trống, giữ nguyên tên gợi nhớ khách đã đặt trước đó
-          // (nhờ không đưa field này vào payload, cột display_name không bị
-          // ON CONFLICT UPDATE đụng tới).
-          ...(nickname ? { display_name: nickname } : {}),
           updated_at: new Date().toISOString(),
         },
         { onConflict: "my_id" }
@@ -55,11 +55,11 @@ export async function POST(request) {
 
     if (upsertError) throw upsertError;
 
-    // Tài khoản mới toanh, chưa từng đặt tên gợi nhớ và lần này cũng không
-    // nhập tên → hiển thị tạm "Anh / Chị" thay vì để trống hay hiện My ID.
+    // display_name (server) chỉ còn dùng làm giá trị dự phòng khi máy khách
+    // chưa có tên gợi nhớ riêng nào lưu ở localStorage.
     const user = {
       my_id: upserted.my_id,
-      display_name: upserted.display_name || "Anh / Chị",
+      display_name: upserted.display_name || nickname || "Anh / Chị",
     };
 
     const token = await createSessionToken({

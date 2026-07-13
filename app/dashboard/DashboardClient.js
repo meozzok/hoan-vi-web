@@ -221,6 +221,22 @@ function saveLinkHistory(myId, list) {
   }
 }
 
+// Tên gợi nhớ cũng chỉ lưu ở máy khách (localStorage), tách riêng theo My ID —
+// để 2 khách dùng chung 1 My ID trên 2 điện thoại khác nhau, mỗi người vẫn
+// thấy đúng tên gợi nhớ mình đã đặt trên máy của mình.
+function localNicknameStorageKey(myId) {
+  return `hoanvi_nickname_${myId || "guest"}`;
+}
+
+function loadLocalNickname(myId) {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(localNicknameStorageKey(myId)) || "";
+  } catch {
+    return "";
+  }
+}
+
 export default function DashboardClient({ user, initialOrders, initialWallet }) {
   const router = useRouter();
   const [orders] = useState(initialOrders || []);
@@ -240,6 +256,11 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   const [linkHistory, setLinkHistory] = useState([]);
   const [historyTab, setHistoryTab] = useState("all"); // "all" | "favorite"
   const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageWindowStart, setHistoryPageWindowStart] = useState(0);
+
+  // Tên gợi nhớ lưu riêng trên từng điện thoại (không đồng bộ qua server) —
+  // để 2 người dùng chung 1 My ID trên 2 máy khác nhau không bị ghi đè tên của nhau.
+  const [localNickname, setLocalNickname] = useState("");
 
   // Đơn hàng: tìm kiếm theo mã đơn / tên sản phẩm + lọc theo trạng thái + phân trang.
   const [orderSearch, setOrderSearch] = useState("");
@@ -265,6 +286,11 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- đọc lịch sử link đã lưu ở máy khách theo My ID
     setLinkHistory(loadLinkHistory(user.myId));
+  }, [user.myId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- đọc tên gợi nhớ đã lưu riêng trên máy này theo My ID
+    setLocalNickname(loadLocalNickname(user.myId));
   }, [user.myId]);
 
   // STT lịch sử: đánh theo thứ tự tạo (link tạo trước có số nhỏ hơn), không đổi khi lọc theo tab.
@@ -305,11 +331,35 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   function handleHistoryTabChange(tab) {
     setHistoryTab(tab);
     setHistoryPage(1);
+    setHistoryPageWindowStart(0);
+  }
+
+  function goToHistoryPage(p) {
+    setHistoryPage(p);
+  }
+
+  function advanceHistoryPageWindow() {
+    setHistoryPageWindowStart((w) => Math.min(w + PAGE_WINDOW, Math.max(0, historyTotalPages - 1)));
+  }
+
+  function retreatHistoryPageWindow() {
+    setHistoryPageWindowStart((w) => Math.max(0, w - PAGE_WINDOW));
   }
 
   function toggleFavoriteLink(id) {
     setLinkHistory((prev) => {
       const merged = prev.map((h) => (h.id === id ? { ...h, favorite: !h.favorite } : h));
+      saveLinkHistory(user.myId, merged);
+      return merged;
+    });
+  }
+
+  function deleteHistoryLink(id) {
+    if (typeof window !== "undefined" && !window.confirm("Xóa sản phẩm này khỏi lịch sử tạo link?")) {
+      return;
+    }
+    setLinkHistory((prev) => {
+      const merged = prev.filter((h) => h.id !== id);
       saveLinkHistory(user.myId, merged);
       return merged;
     });
@@ -371,6 +421,24 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     try {
       const text = await navigator.clipboard.readText();
       if (text) setShopeeUrl(text.trim());
+    } catch {
+      // Trình duyệt có thể chặn đọc clipboard — khách vẫn có thể tự dán (Ctrl/Cmd+V).
+    }
+  }
+
+  // Nút dán riêng cho ô "Tạo nhiều link" — đọc clipboard rồi tách mỗi link 1 dòng,
+  // giống hệt logic khi khách tự dán (Ctrl/Cmd+V) vào ô này.
+  async function handlePasteMultiUrl() {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text) return;
+      const tokens = text.split(/\s+/).map((t) => t.trim()).filter(Boolean);
+      if (tokens.length === 0) return;
+      setMultiUrlsText((prev) => {
+        const existing = prev.split("\n").map((s) => s.trim()).filter(Boolean);
+        const merged = [...existing, ...tokens].slice(0, MAX_MULTI_LINKS);
+        return merged.join("\n");
+      });
     } catch {
       // Trình duyệt có thể chặn đọc clipboard — khách vẫn có thể tự dán (Ctrl/Cmd+V).
     }
@@ -541,7 +609,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     setTimeout(() => setCopiedOrderId(""), 1500);
   }
 
-  const displayName = user.displayName || user.myId;
+  const displayName = localNickname || user.displayName || user.myId;
 
   // Tiêu đề đầu trang đổi theo tab đang xem.
   let headerTitle = `Hello ${displayName}`;
@@ -634,24 +702,24 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               <button
                 type="button"
                 onClick={() => handleCreateModeChange("single")}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
+                className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer ${
                   createMode === "single"
-                    ? "bg-[#8b5fbf] text-white shadow-sm"
-                    : "bg-surface border border-border text-muted hover:text-cream"
+                    ? "bg-[#ffcd3c] border-[#e8a800] text-[#6b4c00] shadow-sm scale-[1.03]"
+                    : "bg-[#fff6da] border-[#ffe6a0] text-[#a3781a] hover:brightness-95"
                 }`}
               >
-                Tạo 1 link
+                🎀 Tạo 1 link
               </button>
               <button
                 type="button"
                 onClick={() => handleCreateModeChange("multi")}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
+                className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer ${
                   createMode === "multi"
-                    ? "bg-[#8b5fbf] text-white shadow-sm"
-                    : "bg-surface border border-border text-muted hover:text-cream"
+                    ? "bg-[#ff8383] border-[#e94f4f] text-white shadow-sm scale-[1.03]"
+                    : "bg-[#ffe4e4] border-[#ffc4c4] text-[#c34848] hover:brightness-95"
                 }`}
               >
-                Tạo nhiều link
+                🎀 Tạo nhiều link
               </button>
             </div>
 
@@ -678,15 +746,26 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 </div>
               ) : (
                 <div>
-                  <textarea
-                    required
-                    rows={5}
-                    value={multiUrlsText}
-                    onChange={(e) => setMultiUrlsText(e.target.value)}
-                    onPaste={handleMultiPaste}
-                    placeholder={`https://shopee.vn/...\nhttps://shopee.vn/...\n(mỗi link 1 dòng, tối đa ${MAX_MULTI_LINKS} link)`}
-                    className="w-full bg-surface border border-border rounded-lg px-3.5 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60 resize-y"
-                  />
+                  <div className="relative">
+                    <textarea
+                      required
+                      rows={5}
+                      value={multiUrlsText}
+                      onChange={(e) => setMultiUrlsText(e.target.value)}
+                      onPaste={handleMultiPaste}
+                      placeholder={`https://shopee.vn/...\nhttps://shopee.vn/...\n(mỗi link 1 dòng, tối đa ${MAX_MULTI_LINKS} link)`}
+                      className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-11 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60 resize-y"
+                    />
+                    <button
+                      type="button"
+                      onClick={handlePasteMultiUrl}
+                      aria-label="Dán link từ clipboard"
+                      title="Dán link"
+                      className="absolute right-2 top-2.5 inline-flex items-center justify-center w-8 h-8 rounded-md bg-panel-2 text-gold hover:brightness-95 active:scale-90 transition-all cursor-pointer"
+                    >
+                      <PasteIcon className="w-4 h-4" />
+                    </button>
+                  </div>
                   <p className={`text-xs mt-1.5 ${multiUrlsCount > MAX_MULTI_LINKS ? "text-danger font-semibold" : "text-muted"}`}>
                     {multiUrlsCount}/{MAX_MULTI_LINKS} link
                     {multiUrlsCount > MAX_MULTI_LINKS ? " — chỉ 10 link đầu tiên được tạo" : ""}
@@ -828,17 +907,17 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         )}
 
         {activeTab === "link" && (
-          <div className="mt-6 bg-panel border border-border rounded-2xl overflow-hidden">
-            <div className="p-5 sm:p-6 pb-4">
+          <div className="mt-6 bg-panel border border-border rounded-2xl">
+            <div className="sticky top-2 z-20 bg-panel rounded-t-2xl p-5 sm:p-6 pb-4 border-b border-border/60 shadow-sm shadow-black/5">
               <p className="font-display font-bold text-lg mb-3">Lịch sử tạo link</p>
-              <div className="flex items-center gap-2 bg-surface border border-border rounded-full p-1.5 w-fit">
+              <div className="flex items-stretch gap-2 w-full">
                 <button
                   type="button"
                   onClick={() => handleHistoryTabChange("all")}
-                  className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all cursor-pointer ${
+                  className={`flex-1 px-4 py-2 rounded-full text-sm font-bold text-center transition-all cursor-pointer border-2 ${
                     historyTab === "all"
-                      ? "bg-highlight text-white shadow-sm"
-                      : "text-muted hover:text-cream"
+                      ? "bg-highlight border-highlight text-white shadow-sm"
+                      : "bg-surface border-border text-muted hover:text-cream"
                   }`}
                 >
                   Tất cả ({linkHistory.length})
@@ -846,10 +925,10 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 <button
                   type="button"
                   onClick={() => handleHistoryTabChange("favorite")}
-                  className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all cursor-pointer ${
+                  className={`flex-1 px-4 py-2 rounded-full text-sm font-bold text-center transition-all cursor-pointer border-2 ${
                     historyTab === "favorite"
-                      ? "bg-highlight text-white shadow-sm"
-                      : "text-muted hover:text-cream"
+                      ? "bg-gradient-to-r from-[#ff5b6e] to-[#ff8a8a] border-[#ff5b6e] text-white shadow-md shadow-[#ff5b6e]/40"
+                      : "bg-[#ffe4e4] border-[#ffc4c4] text-[#c34848] hover:brightness-95"
                   }`}
                 >
                   ❤️ Yêu thích ({historyFavoriteCount})
@@ -876,16 +955,27 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                         key={item.id}
                         className="relative px-4 py-4 rounded-xl border-2 border-border bg-surface/50"
                       >
-                        <button
-                          type="button"
-                          onClick={() => toggleFavoriteLink(item.id)}
-                          aria-label={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
-                          title={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
-                          className="absolute top-3 right-3 inline-flex items-center justify-center w-7 h-7 rounded-full bg-panel border border-border text-[#ef4444] hover:brightness-95 active:scale-90 transition-all cursor-pointer"
-                        >
-                          <HeartIcon className="w-3.5 h-3.5" filled={item.favorite} />
-                        </button>
-                        <div className="flex items-center gap-3 pr-9">
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => toggleFavoriteLink(item.id)}
+                            aria-label={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                            title={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-panel border border-border text-[#ef4444] hover:brightness-95 active:scale-90 transition-all cursor-pointer"
+                          >
+                            <HeartIcon className="w-3.5 h-3.5" filled={item.favorite} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteHistoryLink(item.id)}
+                            aria-label="Xóa khỏi lịch sử"
+                            title="Xóa khỏi lịch sử"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-panel border border-border text-muted hover:text-danger hover:brightness-95 active:scale-90 transition-all cursor-pointer"
+                          >
+                            <CloseIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-3 pr-[4.5rem]">
                           {item.image ? (
                             <img
                               src={item.image}
@@ -901,35 +991,33 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="text-[11px] text-muted font-mono-num">
-                              {String(stt).padStart(2, "0")}
-                            </p>
+                            <p className="text-[11px] text-muted font-mono-num">#{stt}</p>
                             <p className="text-sm font-bold truncate">
                               {truncateChars(item.productName || "Sản phẩm Shopee", 50)}
                             </p>
                             <p className="text-xs mt-0.5">
+                              <span className="text-danger">Hoa hồng ước tính:</span>{" "}
                               <span className="text-[#1a7a3d] font-bold font-mono-num">
                                 {item.commissionStr}
                               </span>
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 mt-3 border border-border rounded-md bg-surface px-2.5 py-1.5">
-                          <p className="font-mono-num text-[11px] text-muted truncate flex-1">
-                            {item.convertedUrl}
-                          </p>
+                        <div className="flex gap-2 mt-3">
+                          <a
+                            href={item.convertedUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 text-center bg-[#16c261] hover:bg-[#12a852] text-white text-xs font-bold rounded-lg px-3 py-2.5 shadow-sm shadow-[#16c261]/40 transition-all active:scale-[0.98] cursor-pointer"
+                          >
+                            🛍️ Mua Ngay
+                          </a>
                           <button
                             type="button"
                             onClick={() => handleCopyLink(item.convertedUrl, item.id)}
-                            aria-label="Sao chép link"
-                            title="Sao chép link"
-                            className="inline-flex items-center justify-center w-5 h-5 text-muted hover:text-highlight active:scale-90 transition-all cursor-pointer shrink-0"
+                            className="flex-1 bg-white hover:bg-white/90 text-ink border border-border text-xs font-semibold rounded-lg px-3 py-2.5 transition-all active:scale-[0.98] cursor-pointer"
                           >
-                            {copiedLinkId === item.id ? (
-                              <span className="text-[10px] text-mint">✓</span>
-                            ) : (
-                              <CopyIcon className="w-3.5 h-3.5" />
-                            )}
+                            {copiedLinkId === item.id ? "Đã chép ✓" : "📋 Sao chép"}
                           </button>
                         </div>
                         <p className="text-[11px] text-muted mt-2">
@@ -948,9 +1036,9 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                         <th className="text-left font-bold px-6 py-3">STT</th>
                         <th className="text-left font-bold px-4 py-3">Sản phẩm</th>
                         <th className="text-right font-bold px-4 py-3">Hoa hồng</th>
-                        <th className="text-left font-bold px-4 py-3">Link</th>
+                        <th className="text-center font-bold px-4 py-3">Hành động</th>
                         <th className="text-right font-bold px-4 py-3">Ngày tạo</th>
-                        <th className="text-right font-bold px-6 py-3">Yêu thích</th>
+                        <th className="text-right font-bold px-6 py-3">Yêu thích / Xóa</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -959,7 +1047,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                         return (
                           <tr key={item.id} className="border-t border-border/60">
                             <td className="px-6 py-3.5 font-mono-num text-muted text-xs">
-                              {String(stt).padStart(2, "0")}
+                              #{stt}
                             </td>
                             <td className="px-4 py-3.5">
                               <div className="flex items-center gap-2.5">
@@ -984,22 +1072,21 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                               {item.commissionStr}
                             </td>
                             <td className="px-4 py-3.5">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-mono-num text-xs text-muted truncate max-w-[200px] inline-block">
-                                  {item.convertedUrl}
-                                </span>
+                              <div className="flex items-center justify-center gap-2">
+                                <a
+                                  href={item.convertedUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-center bg-[#16c261] hover:bg-[#12a852] text-white text-xs font-bold rounded-lg px-3 py-2 shadow-sm shadow-[#16c261]/40 transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
+                                >
+                                  🛍️ Mua Ngay
+                                </a>
                                 <button
                                   type="button"
                                   onClick={() => handleCopyLink(item.convertedUrl, item.id)}
-                                  aria-label="Sao chép link"
-                                  title="Sao chép link"
-                                  className="inline-flex items-center justify-center w-5 h-5 text-muted hover:text-highlight active:scale-90 transition-all cursor-pointer shrink-0"
+                                  className="bg-white hover:bg-white/90 text-ink border border-border text-xs font-semibold rounded-lg px-3 py-2 transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
                                 >
-                                  {copiedLinkId === item.id ? (
-                                    <span className="text-[10px] text-mint">✓</span>
-                                  ) : (
-                                    <CopyIcon className="w-3.5 h-3.5" />
-                                  )}
+                                  {copiedLinkId === item.id ? "Đã chép ✓" : "📋 Sao chép"}
                                 </button>
                               </div>
                             </td>
@@ -1007,15 +1094,26 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                               {formatDateTime(item.createdAt)}
                             </td>
                             <td className="px-6 py-3.5 text-right">
-                              <button
-                                type="button"
-                                onClick={() => toggleFavoriteLink(item.id)}
-                                aria-label={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
-                                title={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
-                                className="inline-flex items-center justify-center w-7 h-7 rounded-full text-[#ef4444] hover:bg-panel-2 active:scale-90 transition-all cursor-pointer"
-                              >
-                                <HeartIcon className="w-4 h-4" filled={item.favorite} />
-                              </button>
+                              <div className="inline-flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleFavoriteLink(item.id)}
+                                  aria-label={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                                  title={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-full text-[#ef4444] hover:bg-panel-2 active:scale-90 transition-all cursor-pointer"
+                                >
+                                  <HeartIcon className="w-4 h-4" filled={item.favorite} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => deleteHistoryLink(item.id)}
+                                  aria-label="Xóa khỏi lịch sử"
+                                  title="Xóa khỏi lịch sử"
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-full text-muted hover:text-danger hover:bg-panel-2 active:scale-90 transition-all cursor-pointer"
+                                >
+                                  <CloseIcon className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1024,16 +1122,28 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   </table>
                 </div>
 
-                {/* Phân trang: 10 sản phẩm mỗi trang */}
+                {/* Phân trang: tối đa 10 số trang mỗi lượt, mỗi trang 10 link */}
                 {historyTotalPages > 1 && (
                   <div className="flex flex-wrap items-center justify-center gap-1.5 px-5 py-5 border-t border-border">
-                    {Array.from({ length: historyTotalPages }).map((_, i) => {
-                      const p = i + 1;
+                    {historyPageWindowStart > 0 && (
+                      <button
+                        type="button"
+                        onClick={retreatHistoryPageWindow}
+                        className="w-8 h-8 rounded-full text-xs font-semibold text-muted hover:text-cream border border-border cursor-pointer"
+                        aria-label="Trang trước đó"
+                      >
+                        ‹
+                      </button>
+                    )}
+                    {Array.from({
+                      length: Math.min(PAGE_WINDOW, historyTotalPages - historyPageWindowStart),
+                    }).map((_, i) => {
+                      const p = historyPageWindowStart + i + 1;
                       return (
                         <button
                           key={p}
                           type="button"
-                          onClick={() => setHistoryPage(p)}
+                          onClick={() => goToHistoryPage(p)}
                           className={`w-8 h-8 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
                             historyPage === p
                               ? "bg-highlight text-white"
@@ -1044,6 +1154,19 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                         </button>
                       );
                     })}
+                    {historyPageWindowStart + PAGE_WINDOW < historyTotalPages && (
+                      <button
+                        type="button"
+                        onClick={advanceHistoryPageWindow}
+                        className="w-8 h-8 rounded-full text-xs font-semibold text-muted hover:text-cream border border-border cursor-pointer"
+                        aria-label="Xem thêm trang"
+                      >
+                        ›
+                      </button>
+                    )}
+                    <span className="text-xs text-muted ml-2 font-mono-num">
+                      Trang {historyPage}/{historyTotalPages}
+                    </span>
                   </div>
                 )}
               </>
