@@ -985,7 +985,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   onClick={() => handleHistoryTabChange("all")}
                   className={`flex-1 px-4 py-2 rounded-full text-sm font-bold text-center transition-all cursor-pointer border-2 ${
                     historyTab === "all"
-                      ? "bg-[#38bdf8] border-[#0ea5e9] text-white shadow-sm"
+                      ? "bg-[#7dd3fc] border-[#38bdf8] text-white shadow-sm"
                       : "bg-surface border-border text-muted hover:text-cream"
                   }`}
                 >
