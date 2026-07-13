@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { THEMES, DEFAULT_THEME, getStoredTheme, setStoredTheme } from "../../lib/theme";
+import { DEFAULT_THEME } from "../../lib/theme";
 
 const ZALO_GROUP_LINK = "https://zalo.me/g/msd7vvhjcwiffr3tyqor";
 const MYID_COMMAND = "#My_ID";
@@ -104,18 +104,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [theme, setTheme] = useState(DEFAULT_THEME);
-
-  // Đọc giao diện đã lưu (nếu có) khi trang được tải.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- đồng bộ với localStorage, chỉ chạy 1 lần lúc mount
-    setTheme(getStoredTheme());
-  }, []);
-
-  function handlePickTheme(themeId) {
-    setTheme(themeId);
-    setStoredTheme(themeId);
-  }
+  const theme = DEFAULT_THEME;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -205,31 +194,20 @@ export default function LoginPage() {
               <div className="w-10 h-7 rounded-md overflow-hidden shadow-sm shadow-black/10 shrink-0">
                 <VietnamFlagIcon className="w-full h-full" />
               </div>
-              <div className="flex items-center gap-1.5" role="group" aria-label="Chọn màu giao diện">
-                {THEMES.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => handlePickTheme(t.id)}
-                    title={t.label}
-                    aria-label={`Đổi giao diện màu ${t.label}`}
-                    aria-pressed={theme === t.id}
-                    className={`theme-swatch${theme === t.id ? " is-active" : ""}`}
-                    style={{ background: t.swatch }}
-                  />
-                ))}
+              <div className="brand-badge" title="Hoàn tiền cùng Phương Thảo">
+                <img src="/brand/logo-shield.png" alt="Hoàn tiền mua hàng" />
               </div>
             </div>
 
-            {/* Lời chào — đổi ngay theo Tên gợi nhớ khách nhập, mỗi phần 1 màu pastel */}
-            <p className="text-center font-display font-bold text-xl mb-5 transition-all text-[#8b6ec9]">
+            {/* Lời chào — đổi ngay theo Tên gợi nhớ khách nhập */}
+            <p className="soft-frame text-center font-display font-bold text-xl mb-5 py-2.5 transition-all text-highlight">
               Hello {nickname.trim() ? nickname.trim() : "Anh / Chị"} <span>👋</span>
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Tên gợi nhớ */}
               <div>
-                <label className="block text-xs font-bold text-[#8b6ec9] mb-1.5" htmlFor="nickname">
+                <label className="block text-xs font-bold text-highlight mb-1.5" htmlFor="nickname">
                   Tên gợi nhớ <span className="font-semibold text-muted">(không bắt buộc)</span>
                 </label>
                 <input
@@ -238,26 +216,26 @@ export default function LoginPage() {
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
                   placeholder="Đặt tên gì cũng được, vd: Thảo Shopee"
-                  className="field-important w-full bg-surface border-2 border-[#8b6ec9]/30 rounded-xl px-3.5 py-2.5 text-base sm:text-sm outline-none focus:border-[#8b6ec9] transition-colors placeholder:text-muted/60"
+                  className="field-important w-full bg-surface border-2 border-highlight/30 rounded-xl px-3.5 py-2.5 text-base sm:text-sm outline-none focus:border-highlight transition-colors placeholder:text-muted/60"
                 />
               </div>
 
               {/* Cách lấy My ID — chuyển lên trên, trước ô nhập My ID */}
               <div className="text-[11px] text-muted leading-snug space-y-2.5 bg-surface/60 border border-border rounded-xl px-3.5 py-3">
-                <p className="font-semibold text-[#c99a3f] flex items-center gap-1.5 text-xs">
-                  <CuteCatIcon className="w-4 h-4 text-[#c99a3f]" />
+                <p className="font-semibold text-highlight flex items-center gap-1.5 text-xs">
+                  <CuteCatIcon className="w-4 h-4 text-highlight" />
                   Cách lấy My ID:
                 </p>
                 <p className="flex flex-wrap items-center gap-1.5">
                   <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#8b5fbf] text-white text-[9px] font-bold shrink-0">1</span>
-                  <span className="font-bold text-[#4a2337]">Sao chép câu lệnh</span>
+                  <span className="font-bold text-ink">Sao chép câu lệnh</span>
                   <span className="inline-flex items-center gap-1 font-mono-num font-bold bg-highlight/15 text-highlight px-1.5 py-0.5 rounded-md">
                     {MYID_COMMAND}
                     <button
                       type="button"
                       onClick={copyCommand}
                       aria-label="Sao chép câu lệnh My ID"
-                      className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-md bg-[#d9527f] text-white hover:brightness-95 active:scale-90 transition-all cursor-pointer"
+                      className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-md bg-highlight text-white hover:brightness-95 active:scale-90 transition-all cursor-pointer"
                     >
                       {copied ? "✓" : <CopyIcon className="w-3 h-3" />}
                     </button>
@@ -265,8 +243,8 @@ export default function LoginPage() {
                   {copied && <span className="text-highlight font-bold">Đã sao chép!</span>}
                 </p>
                 <p className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#2f8fd1] text-white text-[9px] font-bold shrink-0">2</span>
-                  <span className="font-bold text-[#4a2337]">Gửi vào nhóm để lấy My ID</span>
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#a97fd1] text-white text-[9px] font-bold shrink-0">2</span>
+                  <span className="font-bold text-ink">Gửi vào nhóm để lấy My ID</span>
                   <a
                     href={ZALO_GROUP_LINK}
                     target="_blank"
@@ -278,14 +256,14 @@ export default function LoginPage() {
                   </a>
                 </p>
                 <p className="flex flex-wrap items-center gap-1.5">
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#c99a3f] text-white text-[9px] font-bold shrink-0">3</span>
-                  <span className="font-bold text-[#4a2337]">Sao chép ID bot gửi cho bạn và điền vào ô My ID.</span>
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#6f3fae] text-white text-[9px] font-bold shrink-0">3</span>
+                  <span className="font-bold text-ink">Sao chép ID bot gửi cho bạn và điền vào ô My ID.</span>
                 </p>
               </div>
 
               {/* My ID */}
               <div>
-                <label className="block text-xs font-bold text-[#3f95b0] mb-1.5" htmlFor="myId">
+                <label className="block text-xs font-bold text-highlight mb-1.5" htmlFor="myId">
                   My ID <span className="font-semibold text-danger">(bắt buộc)</span>
                 </label>
                 <input
@@ -297,8 +275,8 @@ export default function LoginPage() {
                   placeholder="VD: 3630821671476852507"
                   className={`field-important w-full font-mono-num border-2 rounded-xl px-3.5 py-2.5 text-base sm:text-sm outline-none transition-all placeholder:text-[11px] placeholder:text-muted/60 ${
                     groupLinkOpened
-                      ? "bg-surface border-[#3f95b0]/30 focus:border-[#3f95b0] opacity-100"
-                      : "bg-surface/70 border-border opacity-60 focus:border-[#3f95b0] focus:opacity-100"
+                      ? "bg-surface border-highlight/30 focus:border-highlight opacity-100"
+                      : "bg-surface/70 border-border opacity-60 focus:border-highlight focus:opacity-100"
                   }`}
                 />
                 <p className="text-[11px] text-[#c1626b] font-semibold mt-1.5 leading-snug flex items-start gap-1">
@@ -319,7 +297,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#4f9e6e] hover:bg-[#458a5f] text-white font-extrabold rounded-xl py-3 text-base tracking-wide shadow-lg shadow-[#4f9e6e]/40 transition-all disabled:opacity-60 cursor-pointer mt-2 active:scale-[0.98] flex items-center justify-center gap-2"
+                className="w-full bg-[#4a1f7a] hover:bg-[#5c2b93] text-white font-extrabold rounded-xl py-3 text-base tracking-wide shadow-lg shadow-[#4a1f7a]/50 transition-all disabled:opacity-60 cursor-pointer mt-2 active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>

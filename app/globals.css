@@ -99,155 +99,90 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Bảng màu Hồng Nhẹ (nhẹ mắt) — chỉ áp dụng riêng cho trang
-   đăng nhập / đăng ký (.login-pink), không ảnh hưởng dashboard.
+   Bảng màu Tím Nhạt (nhẹ mắt, dịu) — dùng chung cho cả trang
+   đăng nhập lẫn dashboard. Đây là bảng màu duy nhất của app,
+   không còn bộ chọn 7 màu.
    ───────────────────────────────────────────────────────────── */
 .login-pink {
-  --ink: #4a2337;
-  --surface: #fff6fa;
-  --panel: #fffbfd;
-  --panel-2: #ffdcec;
-  --border: #f6c3da;
-  --gold: #ee6f9d;
-  --gold-soft: #f593b8;
-  --mint: #f7a8c4;
-  --cream: #4a2337;
-  --muted: #b3798f;
+  --ink: #3d2a52;
+  --surface: #faf7ff;
+  --panel: #fffdff;
+  --panel-2: #ece0fb;
+  --border: #ddc7f5;
+  --gold: #8b5fbf;
+  --gold-soft: #a97fd1;
+  --mint: #c9a6f2;
+  --cream: #3d2a52;
+  --muted: #8b7a9e;
   --danger: #d94f70;
-  --highlight: #e0417c;
+  --highlight: #6f3fae;
 
-  --bg-grad-1: #fff3f8;
-  --bg-grad-2: #ffe6f0;
-  --bg-grad-3: #ffd7e7;
+  --bg-grad-1: #f8f3ff;
+  --bg-grad-2: #f1e6ff;
+  --bg-grad-3: #e9d9ff;
 
   background: linear-gradient(160deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 45%, var(--bg-grad-3) 100%);
   background-attachment: fixed;
   color: var(--cream);
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Bảng chọn giao diện (theme) — người dùng bấm 1 trong 6 màu ở
-   góc trên bên phải thẻ đăng nhập, lựa chọn được lưu và đồng bộ
-   xuyên suốt cả trang đăng nhập lẫn dashboard sau khi đăng nhập.
-   ───────────────────────────────────────────────────────────── */
-.login-pink.theme-purple {
-  --panel-2: #ecdcfb;
-  --border: #ddc7f5;
-  --gold: #a97fd1;
-  --gold-soft: #c9a6f2;
-  --mint: #d8c2f5;
-  --danger: #d94f70;
-  --highlight: #8b5fbf;
-  --bg-grad-1: #f8f3ff;
-  --bg-grad-2: #f1e6ff;
-  --bg-grad-3: #e9d9ff;
-}
-
-.login-pink.theme-blue {
-  --panel-2: #dff1fb;
-  --border: #bfe3f7;
-  --gold: #5fa8e0;
-  --gold-soft: #9fc9f0;
-  --mint: #bfe0f2;
-  --danger: #d9704f;
-  --highlight: #2f7fd1;
-  --bg-grad-1: #f2f9ff;
-  --bg-grad-2: #e6f2ff;
-  --bg-grad-3: #d9ecff;
-}
-
-.login-pink.theme-red {
-  --panel-2: #fbdede;
-  --border: #f5c2c2;
-  --gold: #e0524f;
-  --gold-soft: #ea8b89;
-  --mint: #f0b3b3;
-  --danger: #c93f3f;
-  --highlight: #d33d3d;
-  --bg-grad-1: #fff5f5;
-  --bg-grad-2: #ffe6e6;
-  --bg-grad-3: #ffd6d6;
-}
-
-.login-pink.theme-green {
-  --panel-2: #dcf3df;
-  --border: #bfe6c6;
-  --gold: #4caf50;
-  --gold-soft: #7fc98a;
-  --mint: #b8e6c0;
-  --danger: #d9704f;
-  --highlight: #3f9a46;
-  --bg-grad-1: #f2fff4;
-  --bg-grad-2: #e3fbe7;
-  --bg-grad-3: #d3f5da;
-}
-
-.login-pink.theme-indigo {
-  --panel-2: #e2e4fb;
-  --border: #c8ccf5;
-  --gold: #5c6bc0;
-  --gold-soft: #8992d6;
-  --mint: #c2c8f0;
-  --danger: #d9524f;
-  --highlight: #4650a8;
-  --bg-grad-1: #f4f5ff;
-  --bg-grad-2: #e9ebff;
-  --bg-grad-3: #dcdfff;
-}
-
-.login-pink.theme-orange {
-  --panel-2: #fdecd6;
-  --border: #fadfc0;
-  --gold: #ee9142;
-  --gold-soft: #f5c08a;
-  --mint: #f7d3ae;
-  --danger: #d9524f;
-  --highlight: #e8813a;
-  --bg-grad-1: #fff8f0;
-  --bg-grad-2: #ffedd9;
-  --bg-grad-3: #ffe0bd;
-}
-
-.login-pink.theme-yellow {
-  --ink: #4a3f1f;
-  --panel-2: #fbf3d4;
-  --border: #f7e9b8;
-  --gold: #d9a72c;
-  --gold-soft: #e7c34d;
-  --mint: #f0dd8f;
-  --danger: #d9704f;
-  --highlight: #c99424;
-  --cream: #4a3f1f;
-  --bg-grad-1: #fffdf0;
-  --bg-grad-2: #fff8d9;
-  --bg-grad-3: #fff0b8;
-}
-
-.theme-swatch {
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  border: 2px solid rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  padding: 0;
-  display: inline-block;
-}
-.theme-swatch:hover {
-  transform: scale(1.12);
-}
-.theme-swatch.is-active {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--highlight);
-  transform: scale(1.12);
-}
-
 .login-pink .field-important {
-  box-shadow: 0 0 0 3px rgba(224, 65, 124, 0.08);
+  box-shadow: 0 0 0 3px rgba(111, 63, 174, 0.10);
 }
 .login-pink .field-important:focus {
-  box-shadow: 0 0 0 3px rgba(224, 65, 124, 0.16);
+  box-shadow: 0 0 0 3px rgba(111, 63, 174, 0.18);
 }
 .login-pink .ticket-notch::before,
 .login-pink .ticket-notch::after {
-  background: #ffe6f0;
+  background: #f1e6ff;
+}
+
+/* Nhãn logo/avatar thương hiệu — thay cho bộ chọn 7 màu cũ */
+.brand-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 0 0 0 2px #fff, 0 2px 8px rgba(111, 63, 174, 0.25);
+  flex-shrink: 0;
+}
+.brand-badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Khung đèn chạy 6 sắc cầu vồng — dùng cho các tiêu đề/khối
+   muốn nhấn mạnh, hiệu ứng viền sáng di chuyển liên tục.
+   ───────────────────────────────────────────────────────────── */
+.rainbow-frame {
+  position: relative;
+  padding: 3px;
+  border-radius: 18px;
+  background: linear-gradient(
+    90deg,
+    #ff4d4d, #ff9d3b, #ffe93b, #4dd67a, #3bb8ff, #8a5cff, #ff4d4d
+  );
+  background-size: 300% 100%;
+  animation: rainbow-chase 5s linear infinite;
+  box-shadow: 0 4px 18px rgba(111, 63, 174, 0.25);
+}
+.rainbow-frame-inner {
+  border-radius: 15px;
+  background: var(--panel);
+  height: 100%;
+  width: 100%;
+}
+@keyframes rainbow-chase {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+/* Khung nhẹ, dịu mắt — dùng cho những dòng chữ chào cần đóng khung nhẹ */
+.soft-frame {
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  border-radius: 14px;
 }

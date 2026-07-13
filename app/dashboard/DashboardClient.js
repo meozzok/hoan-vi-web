@@ -34,13 +34,6 @@ function statusMeta(trangThai) {
   return STATUS_COLORS.yellow;
 }
 
-const ORDER_FILTERS = [
-  { id: "all", label: "Tất cả", color: "purple" },
-  { id: "completed", label: "Hoàn thành", color: "green" },
-  { id: "pending", label: "Chờ xử lý", color: "yellow" },
-  { id: "cancelled", label: "Đã hủy", color: "red" },
-];
-
 // Chiết khấu hiển thị theo từng đơn: hoa hồng gốc -> trừ thuế 11% -> còn 80% hoa hồng thực nhận.
 function commissionBreakdown(grossCommission) {
   const gross = Number(grossCommission) || 0;
@@ -97,6 +90,15 @@ function WalletTabIcon({ className = "" }) {
       <rect x="3" y="6" width="18" height="13" rx="2" />
       <path d="M3 10h18" />
       <circle cx="16.5" cy="14.5" r="1.4" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function SearchIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
     </svg>
   );
 }
@@ -165,8 +167,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   const [theme, setTheme] = useState(DEFAULT_THEME);
   const [activeTab, setActiveTab] = useState("link");
 
-  // Đơn hàng: lọc theo trạng thái + phân trang.
-  const [orderFilter, setOrderFilter] = useState("all");
+  // Đơn hàng: tìm kiếm theo mã đơn / tên sản phẩm + phân trang.
+  const [orderSearch, setOrderSearch] = useState("");
   const [orderPage, setOrderPage] = useState(1);
   const [pageWindowStart, setPageWindowStart] = useState(0);
 
@@ -186,9 +188,21 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   }, []);
 
   const filteredOrders = useMemo(() => {
-    if (orderFilter === "all") return orders;
-    return orders.filter((o) => classifyStatus(o.status) === orderFilter);
-  }, [orders, orderFilter]);
+    const q = orderSearch.trim().toLowerCase();
+    if (!q) return orders;
+    return orders.filter((o) => {
+      const id = (o.id || "").toLowerCase();
+      const name = (o.productName || "").toLowerCase();
+      return id.includes(q) || name.includes(q);
+    });
+  }, [orders, orderSearch]);
+
+  // Tổng số đơn + tổng hoa hồng thực nhận trên toàn bộ đơn hàng (không phụ thuộc tìm kiếm).
+  const ordersTotalCount = orders.length;
+  const ordersTotalCommission = useMemo(
+    () => orders.reduce((sum, o) => sum + commissionBreakdown(o.commission).final80, 0),
+    [orders]
+  );
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
   const pagedOrders = useMemo(() => {
@@ -196,8 +210,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     return filteredOrders.slice(start, start + PAGE_SIZE);
   }, [filteredOrders, orderPage]);
 
-  function handleFilterChange(id) {
-    setOrderFilter(id);
+  function handleSearchChange(value) {
+    setOrderSearch(value);
     setOrderPage(1);
     setPageWindowStart(0);
   }
@@ -315,14 +329,13 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   const displayName = user.displayName || user.myId;
 
   // Tiêu đề đầu trang đổi theo tab đang xem.
-  let headerTitle = `Hello ${displayName}🌷`;
-  let headerSubtitle = "Tiền kiếm khó lắm hãy tiết kiệm nhé!";
+  let headerTitle = `Hello ${displayName}`;
+  let headerIsRainbow = false;
   if (activeTab === "orders") {
     headerTitle = `Các đơn hàng của ${displayName} 🛍️`;
-    headerSubtitle = "";
   } else if (activeTab === "wallet") {
-    headerTitle = `Tổng tiền hoa hồng của ${displayName} 🌷`;
-    headerSubtitle = "";
+    headerTitle = "Tiền tiết kiệm của SẾP";
+    headerIsRainbow = true;
   }
 
   return (
@@ -353,10 +366,25 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 pb-28 sm:pb-10">
         <div className="mb-8">
-          <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
-            {headerTitle}
-          </h1>
-          {headerSubtitle && <p className="text-muted text-sm mt-1">{headerSubtitle}</p>}
+          {headerIsRainbow ? (
+            <div className="rainbow-frame inline-block">
+              <div className="rainbow-frame-inner px-5 py-3">
+                <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-highlight">
+                  {headerTitle}
+                </h1>
+              </div>
+            </div>
+          ) : activeTab === "link" ? (
+            <div className="soft-frame inline-block px-5 py-3">
+              <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
+                {headerTitle}
+              </h1>
+            </div>
+          ) : (
+            <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
+              {headerTitle}
+            </h1>
+          )}
         </div>
 
         {/* Thanh chuyển tab (ẩn trên desktop vì đã có thanh cố định phía dưới) */}
@@ -380,12 +408,16 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
         {activeTab === "link" && (
           <div className="bg-panel border border-border rounded-2xl p-6 sm:p-7">
-            <h2 className="font-display font-semibold text-lg mb-1">
+            <h2 className="font-display font-bold text-lg mb-3">
               Dán link sản phẩm {user.displayName ? user.displayName : "bạn"} muốn mua
             </h2>
-            <p className="text-muted text-sm mb-5">
-              Dán link &gt; Tạo link hoàn tiền &gt; Mua ngay &gt; Sáng hôm sau khoảng 9h quay lại kiểm tra🔥
-            </p>
+            <div className="rainbow-frame mb-5 inline-block w-full">
+              <div className="rainbow-frame-inner px-4 py-2.5">
+                <p className="text-highlight text-sm font-bold text-center">
+                  Tiền kiếm khó lắm. Nhớ tiết kiệm nhé!
+                </p>
+              </div>
+            </div>
 
             <form onSubmit={handleConvert} className="space-y-3">
               <div className="relative">
@@ -454,7 +486,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     )}
                     <div className="min-w-0">
                       {productInfo.productName && (
-                        <p className="text-base font-semibold">
+                        <p className="text-base font-bold">
                           {truncateChars(productInfo.productName, 60)}
                         </p>
                       )}
@@ -504,27 +536,44 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
         {activeTab === "orders" && (
           <div className="bg-panel border border-border rounded-2xl overflow-hidden">
-            {/* Thanh lọc trạng thái */}
-            <div className="p-6 sm:p-7 pb-4 grid grid-cols-4 gap-2">
-              {ORDER_FILTERS.map((f) => {
-                const c = STATUS_COLORS[f.color];
-                const active = orderFilter === f.id;
-                return (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => handleFilterChange(f.id)}
-                    style={
-                      active
-                        ? { background: c.solid, color: "#fff", borderColor: c.solid }
-                        : { background: c.soft, color: c.solid, borderColor: c.soft }
-                    }
-                    className="px-2 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all cursor-pointer border text-center truncate"
-                  >
-                    {f.label}
-                  </button>
-                );
-              })}
+            {/* Khung tổng quan + tìm kiếm, 2 ô liền nhau trên 1 dòng */}
+            <div className="p-6 sm:p-7 pb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="bg-panel-2 border border-border rounded-xl px-4 py-3.5">
+                  <p className="text-[11px] text-muted uppercase tracking-widest mb-1">Tổng tất cả đơn hàng</p>
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="font-display font-extrabold text-2xl text-highlight tabular-nums">
+                      {ordersTotalCount}
+                    </span>
+                    <span className="text-xs text-muted">đơn</span>
+                  </div>
+                  <p className="text-xs mt-1">
+                    <span className="text-muted">Tổng hoa hồng thực nhận: </span>
+                    <span className="font-mono-num font-bold text-[#16c261]">
+                      {formatVnd(ordersTotalCommission)}
+                    </span>
+                  </p>
+                </div>
+
+                <div className="bg-panel-2 border border-border rounded-xl px-4 py-3.5 flex flex-col justify-center">
+                  <p className="text-[11px] text-muted uppercase tracking-widest mb-1.5">Tìm kiếm đơn hàng</p>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={orderSearch}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      placeholder="Nhập mã đơn hoặc tên sản phẩm..."
+                      className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-11 py-2.5 text-sm outline-none focus:border-highlight transition-colors placeholder:text-muted/60"
+                    />
+                    <span
+                      aria-hidden="true"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 rounded-md bg-highlight text-white"
+                    >
+                      <SearchIcon className="w-4 h-4" />
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {filteredOrders.length === 0 ? (
@@ -545,12 +594,12 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                       <div key={order.id} className="px-5 py-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm font-medium line-clamp-2">
+                            <p className="text-sm font-bold line-clamp-2">
                               {orderNumber}.🛍️ {truncateChars(order.productName, 60)}
                             </p>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <p className="font-mono-num text-xs text-muted">{order.id || "—"}</p>
-                              {order.id && (
+                            {order.id && (
+                              <div className="inline-flex items-center gap-1.5 mt-1 border border-border rounded-md bg-surface px-2 py-1">
+                                <p className="font-mono-num text-xs text-muted">{order.id}</p>
                                 <button
                                   type="button"
                                   onClick={() => handleCopyOrderId(order.id)}
@@ -564,8 +613,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                                     <CopyIcon className="w-3 h-3" />
                                   )}
                                 </button>
-                              )}
-                            </div>
+                              </div>
+                            )}
                           </div>
                           <span
                             className="status-pill shrink-0"
@@ -585,17 +634,17 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                           </div>
                         </div>
                         <div className="grid grid-cols-3 gap-1.5 mt-3">
-                          <div className="text-center">
-                            <p className="text-[10px] tracking-tight whitespace-nowrap" style={{ color: AMOUNT_COLORS.gross }}>Hoa hồng</p>
-                            <p className="font-mono-num text-sm font-semibold whitespace-nowrap" style={{ color: AMOUNT_COLORS.gross }}>{formatVnd(gross)}</p>
+                          <div className="text-center border border-border rounded-lg py-1.5">
+                            <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Hoa hồng</p>
+                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.gross }}>{formatVnd(gross)}</p>
                           </div>
-                          <div className="text-center">
-                            <p className="text-[10px] tracking-tight whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax }}>Sau thuế</p>
-                            <p className="font-mono-num text-sm font-semibold whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax }}>{formatVnd(afterTax)}</p>
+                          <div className="text-center border border-border rounded-lg py-1.5">
+                            <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Sau thuế</p>
+                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax }}>{formatVnd(afterTax)}</p>
                           </div>
-                          <div className="text-center">
-                            <p className="text-[10px] tracking-tight whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80 }}>Hoa hồng thực nhận</p>
-                            <p className="font-mono-num text-sm font-semibold whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80 }}>{formatVnd(final80)}</p>
+                          <div className="text-center border border-border rounded-lg py-1.5">
+                            <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Hoa hồng thực nhận</p>
+                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80 }}>{formatVnd(final80)}</p>
                           </div>
                         </div>
                       </div>
@@ -607,15 +656,15 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 <div className="hidden sm:block overflow-x-auto scrollbar-thin">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-t border-border text-muted text-xs uppercase tracking-wider">
-                        <th className="text-left font-medium px-7 py-3">Mã đơn</th>
-                        <th className="text-left font-medium px-4 py-3">Sản phẩm</th>
-                        <th className="text-right font-medium px-4 py-3" style={{ color: AMOUNT_COLORS.gross }}>Hoa hồng</th>
-                        <th className="text-right font-medium px-4 py-3" style={{ color: AMOUNT_COLORS.afterTax }}>Sau thuế</th>
-                        <th className="text-right font-medium px-4 py-3" style={{ color: AMOUNT_COLORS.final80 }}>Hoa hồng thực nhận</th>
-                        <th className="text-left font-medium px-4 py-3">Trạng thái</th>
-                        <th className="text-right font-medium px-4 py-3">Ngày đặt</th>
-                        <th className="text-right font-medium px-7 py-3">Ngày hoàn thành</th>
+                      <tr className="border-t border-border text-ink text-xs uppercase tracking-wider">
+                        <th className="text-left font-bold px-7 py-3">Mã đơn</th>
+                        <th className="text-left font-bold px-4 py-3">Sản phẩm</th>
+                        <th className="text-right font-bold px-4 py-3">Hoa hồng</th>
+                        <th className="text-right font-bold px-4 py-3">Sau thuế</th>
+                        <th className="text-right font-bold px-4 py-3">Hoa hồng thực nhận</th>
+                        <th className="text-left font-bold px-4 py-3">Trạng thái</th>
+                        <th className="text-right font-bold px-4 py-3">Ngày đặt</th>
+                        <th className="text-right font-bold px-7 py-3">Ngày hoàn thành</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -625,21 +674,23 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                         const orderNumber = String((orderPage - 1) * PAGE_SIZE + i + 1).padStart(2, "0");
                         return (
                           <tr key={order.id} className="border-t border-border/60">
-                            <td className="px-7 py-3.5 font-mono-num text-xs text-muted">
-                              {order.id || "—"}
+                            <td className="px-7 py-3.5">
+                              <span className="inline-block font-mono-num text-xs text-muted border border-border rounded-md bg-surface px-2 py-1">
+                                {order.id || "—"}
+                              </span>
                             </td>
                             <td className="px-4 py-3.5">
-                              <span className="line-clamp-2 max-w-[280px] inline-block align-top">
+                              <span className="line-clamp-2 max-w-[280px] inline-block align-top font-bold">
                                 {orderNumber}.🛍️ {truncateChars(order.productName, 60)}
                               </span>
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-semibold" style={{ color: AMOUNT_COLORS.gross }}>
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.gross }}>
                               {formatVnd(gross)}
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-semibold" style={{ color: AMOUNT_COLORS.afterTax }}>
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.afterTax }}>
                               {formatVnd(afterTax)}
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-semibold" style={{ color: AMOUNT_COLORS.final80 }}>
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.final80 }}>
                               {formatVnd(final80)}
                             </td>
                             <td className="px-4 py-3.5">
@@ -794,27 +845,32 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               <>
                 <div className="ticket-dashed" />
                 <div className="p-6 sm:p-7 grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted mb-1">🟡 Đang chờ xử lý</p>
-                    <p className="font-mono-num text-lg font-semibold text-[#eab308]">
+                  <div className="border border-border rounded-xl px-3.5 py-3">
+                    <p className="text-xs text-muted mb-1">🟡 Tổng hoa hồng</p>
+                    <p className="font-mono-num text-lg font-bold text-[#eab308]">
+                      {formatVnd(
+                        commissionBreakdown(wallet.dangCho).final80 +
+                          wallet.hoanThanhChuaRut +
+                          wallet.coTheRutHien +
+                          wallet.daNhan
+                      )}
+                    </p>
+                  </div>
+                  <div className="border border-border rounded-xl px-3.5 py-3">
+                    <p className="text-xs text-muted mb-1">🟣 Đang chờ xử lý</p>
+                    <p className="font-mono-num text-lg font-bold text-[#a855f7]">
                       {formatVnd(commissionBreakdown(wallet.dangCho).final80)}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted mb-1">🟣 Đã hoàn thành</p>
-                    <p className="font-mono-num text-lg font-semibold text-[#a855f7]">
-                      {formatVnd(wallet.hoanThanhChuaRut)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted mb-1">🟢 Có thể rút ngay</p>
-                    <p className="font-mono-num text-lg font-semibold text-[#16c261]">
+                  <div className="border border-border rounded-xl px-3.5 py-3">
+                    <p className="text-xs text-muted mb-1">🟢 Đã hoàn thành</p>
+                    <p className="font-mono-num text-lg font-bold text-[#16c261]">
                       {formatVnd(wallet.coTheRutHien)}
                     </p>
                   </div>
-                  <div>
+                  <div className="border border-border rounded-xl px-3.5 py-3">
                     <p className="text-xs text-muted mb-1">🔴 Đã nhận</p>
-                    <p className="font-mono-num text-lg font-semibold text-[#ef4444]">
+                    <p className="font-mono-num text-lg font-bold text-[#ef4444]">
                       {formatVnd(wallet.daNhan)}
                     </p>
                   </div>
