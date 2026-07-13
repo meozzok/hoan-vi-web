@@ -51,12 +51,18 @@ function commissionBreakdown(grossCommission) {
   return { gross, afterTax, final80 };
 }
 
-// Màu số tiền — đồng bộ với màu dùng ở tab Ví Tiền (Hoa hồng: đỏ, Sau thuế 11%: tím, Hoa hồng thực nhận: xanh lá).
+// Màu số tiền cho 3 ô Hoa hồng / Sau thuế / Hoa hồng thực nhận — cùng tông xanh
+// dương, đậm/sáng giảm dần theo thứ tự: Hoa hồng thực nhận (đậm & sáng nhất)
+// -> Sau thuế (trung bình) -> Hoa hồng (nhạt nhất). Mỗi mức có thêm màu khung
+// (border) và nền nhạt (soft) riêng để 3 ô cùng một kiểu khung màu đồng bộ.
 const AMOUNT_COLORS = {
-  gross: "#ef4444",
-  afterTax: "#a855f7",
-  final80: "#16c261",
+  gross: { solid: "#7dd3fc", border: "rgba(125,211,252,0.55)", soft: "rgba(125,211,252,0.12)" },
+  afterTax: { solid: "#38bdf8", border: "rgba(56,189,248,0.65)", soft: "rgba(56,189,248,0.14)" },
+  final80: { solid: "#0284c7", border: "#0284c7", soft: "rgba(2,132,199,0.16)" },
 };
+
+// Màu xanh dương sáng dùng chung cho số tiền "Hoa hồng ước tính" ở mọi nơi.
+const ESTIMATE_BLUE = "#0ea5e9";
 
 function PasteIcon({ className = "" }) {
   return (
@@ -824,8 +830,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 <button
                   type="submit"
                   disabled={converting}
-                  className={`flex-1 sm:flex-none sm:w-auto bg-[#8b5fbf] hover:bg-[#9d72d1] text-white font-bold rounded-lg px-5 py-2.5 text-sm shadow-md shadow-[#8b5fbf]/40 transition-colors disabled:opacity-60 disabled:animate-none cursor-pointer ${
-                    batchResults.length === 0 ? "animate-pulse" : ""
+                  className={`flex-1 sm:flex-none sm:w-auto bg-[#8b5fbf] hover:bg-[#9d72d1] text-white font-bold rounded-lg px-5 py-2.5 text-sm shadow-md shadow-[#8b5fbf]/40 transition-all disabled:opacity-60 disabled:animate-none cursor-pointer ${
+                    batchResults.length === 0 ? "animate-pulse" : "opacity-30"
                   }`}
                 >
                   {converting
@@ -926,7 +932,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                           )}
                           <p className="text-xs mt-0.5">
                             <span className="text-danger">Hoa hồng ước tính:</span>{" "}
-                            <span className="text-[#1a7a3d] font-bold font-mono-num">
+                            <span className="font-bold font-mono-num" style={{ color: ESTIMATE_BLUE }}>
                               {item.commissionStr}
                             </span>
                           </p>
@@ -938,7 +944,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                           href={item.convertedUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 text-center bg-[#16c261] hover:bg-[#12a852] text-white text-sm font-bold rounded-lg px-3.5 py-3 shadow-md shadow-[#16c261]/40 transition-all active:scale-[0.98] cursor-pointer"
+                          className="btn-blink-green flex-1 text-center bg-[#16c261] hover:bg-[#12a852] text-white text-sm font-bold rounded-lg px-3.5 py-3 shadow-md shadow-[#16c261]/40 transition-all active:scale-[0.98] cursor-pointer"
                         >
                           🛍️ Mua Ngay
                         </a>
@@ -1060,7 +1066,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             </p>
                             <p className="text-xs mt-0.5">
                               <span className="text-danger">Hoa hồng ước tính:</span>{" "}
-                              <span className="text-[#1a7a3d] font-bold font-mono-num">
+                              <span className="font-bold font-mono-num" style={{ color: ESTIMATE_BLUE }}>
                                 {item.commissionStr}
                               </span>
                             </p>
@@ -1131,7 +1137,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                                 </span>
                               </div>
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-bold text-[#1a7a3d]">
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: ESTIMATE_BLUE }}>
                               {item.commissionStr}
                             </td>
                             <td className="px-4 py-3.5">
@@ -1363,19 +1369,26 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                           </div>
                         </div>
                         <div className="grid grid-cols-3 gap-1.5 mt-3">
-                          <div className="text-center border border-border rounded-lg py-1.5">
+                          <div
+                            className="text-center rounded-lg py-1.5"
+                            style={{ border: `1px solid ${AMOUNT_COLORS.gross.border}`, background: AMOUNT_COLORS.gross.soft }}
+                          >
                             <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Hoa hồng</p>
-                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.gross }}>{formatVnd(gross)}</p>
+                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.gross.solid }}>{formatVnd(gross)}</p>
                           </div>
-                          <div className="text-center border border-border rounded-lg py-1.5">
+                          <div
+                            className="text-center rounded-lg py-1.5"
+                            style={{ border: `1px solid ${AMOUNT_COLORS.afterTax.border}`, background: AMOUNT_COLORS.afterTax.soft }}
+                          >
                             <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Sau thuế</p>
-                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax }}>{formatVnd(afterTax)}</p>
+                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax.solid }}>{formatVnd(afterTax)}</p>
                           </div>
-                          <div className="rainbow-cell">
-                            <div className="rainbow-cell-inner text-center py-1.5">
-                              <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Hoa hồng thực nhận</p>
-                              <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80 }}>{formatVnd(final80)}</p>
-                            </div>
+                          <div
+                            className="text-center rounded-lg py-1.5"
+                            style={{ border: `1.5px solid ${AMOUNT_COLORS.final80.border}`, background: AMOUNT_COLORS.final80.soft }}
+                          >
+                            <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Hoa hồng thực nhận</p>
+                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80.solid }}>{formatVnd(final80)}</p>
                           </div>
                         </div>
                       </div>
@@ -1417,13 +1430,13 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                                 {orderNumber}.🛍️ {truncateChars(order.productName, 60)}
                               </span>
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.gross }}>
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.gross.solid }}>
                               {formatVnd(gross)}
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.afterTax }}>
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.afterTax.solid }}>
                               {formatVnd(afterTax)}
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.final80 }}>
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.final80.solid }}>
                               {formatVnd(final80)}
                             </td>
                             <td className="px-4 py-3.5">
