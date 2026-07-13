@@ -51,14 +51,13 @@ function commissionBreakdown(grossCommission) {
   return { gross, afterTax, final80 };
 }
 
-// Màu số tiền cho 3 ô Hoa hồng / Sau thuế / Hoa hồng thực nhận — cùng tông xanh
-// lá cây sáng, tươi (không dùng tông đậm/xỉn), độ sáng giảm dần theo thứ tự:
-// Hoa hồng thực nhận (sáng & rực nhất) -> Sau thuế (trung bình) -> Hoa hồng (nhạt nhất).
-// Khung (border) của cả 3 ô dùng chung 1 màu tím nhạt theo tông nền của app,
-// chỉ riêng chữ số tiền là đổi màu xanh lá theo từng mức.
+// Màu số tiền cho 3 ô Hoa hồng / Sau thuế / Hoa hồng thực nhận — mỗi ô một màu
+// riêng nhưng cùng một độ sáng/độ rực ngang nhau (không ô nào đậm/nhạt hơn ô nào):
+// Hoa hồng: xanh da trời, Sau thuế: vàng nhẹ, Hoa hồng thực nhận: xanh lá sáng.
+// Khung (border) của cả 3 ô dùng chung 1 màu tím nhạt theo tông nền của app.
 const AMOUNT_COLORS = {
-  gross: { solid: "#8ff0c4", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
-  afterTax: { solid: "#4ee0a0", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
+  gross: { solid: "#38bdf8", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
+  afterTax: { solid: "#ffd35c", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
   final80: { solid: "#0ecb81", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
 };
 
