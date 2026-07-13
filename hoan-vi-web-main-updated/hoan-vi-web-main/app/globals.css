@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #0b1f1c;
+  --surface: #12302b;
+  --panel: #17403a;
+  --panel-2: #1c4b43;
+  --border: #2a5b51;
+  --gold: #e7b84b;
+  --gold-soft: #f0cd7d;
+  --mint: #49d9a6;
+  --cream: #f3efe4;
+  --muted: #93aba1;
+  --danger: #e77a5f;
+  --highlight: var(--gold);
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-surface: var(--surface);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-border: var(--border);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-mint: var(--mint);
+  --color-cream: var(--cream);
+  --color-muted: var(--muted);
+  --color-danger: var(--danger);
+  --color-highlight: var(--highlight);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+body {
+  background: var(--ink);
+  color: var(--cream);
+  background-image:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(231, 184, 75, 0.10), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(73, 217, 166, 0.08), transparent 55%);
+  background-attachment: fixed;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+.font-mono-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Đường viền răng cưa kiểu vé/biên lai, dùng cho thẻ ví tiền */
+.ticket-notch {
+  position: relative;
+}
+.ticket-notch::before,
+.ticket-notch::after {
+  content: "";
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: var(--ink);
+  border-radius: 999px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+.ticket-notch::before {
+  left: -11px;
+}
+.ticket-notch::after {
+  right: -11px;
+}
+
+.ticket-dashed {
+  border-top: 2px dashed var(--border);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Bảng màu Tím Nhạt (nhẹ mắt, dịu) — dùng chung cho cả trang
+   đăng nhập lẫn dashboard. Đây là bảng màu duy nhất của app,
+   không còn bộ chọn 7 màu.
+   ───────────────────────────────────────────────────────────── */
+.login-pink {
+  --ink: #3d2a52;
+  --surface: #faf7ff;
+  --panel: #fffdff;
+  --panel-2: #ece0fb;
+  --border: #ddc7f5;
+  --gold: #8b5fbf;
+  --gold-soft: #a97fd1;
+  --mint: #c9a6f2;
+  --cream: #3d2a52;
+  --muted: #8b7a9e;
+  --danger: #d94f70;
+  --highlight: #6f3fae;
+
+  --bg-grad-1: #f8f3ff;
+  --bg-grad-2: #f1e6ff;
+  --bg-grad-3: #e9d9ff;
+
+  background: linear-gradient(160deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 45%, var(--bg-grad-3) 100%);
+  background-attachment: fixed;
+  color: var(--cream);
+}
+
+.login-pink .field-important {
+  box-shadow: 0 0 0 3px rgba(111, 63, 174, 0.10);
+}
+.login-pink .field-important:focus {
+  box-shadow: 0 0 0 3px rgba(111, 63, 174, 0.18);
+}
+.login-pink .ticket-notch::before,
+.login-pink .ticket-notch::after {
+  background: #f1e6ff;
+}
+
+/* Nhãn logo/avatar thương hiệu — thay cho bộ chọn 7 màu cũ */
+.brand-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 0 0 0 2px #fff, 0 2px 8px rgba(111, 63, 174, 0.25);
+  flex-shrink: 0;
+}
+.brand-badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Khung đèn chạy 6 sắc cầu vồng — dùng cho các tiêu đề/khối
+   muốn nhấn mạnh, hiệu ứng viền sáng di chuyển liên tục.
+   ───────────────────────────────────────────────────────────── */
+.rainbow-frame {
+  position: relative;
+  padding: 3px;
+  border-radius: 18px;
+  background: linear-gradient(
+    90deg,
+    #ff4d4d, #ff9d3b, #ffe93b, #4dd67a, #3bb8ff, #8a5cff, #ff4d4d
+  );
+  background-size: 300% 100%;
+  animation: rainbow-chase 5s linear infinite;
+  box-shadow: 0 4px 18px rgba(111, 63, 174, 0.25);
+}
+.rainbow-frame-inner {
+  border-radius: 15px;
+  background: var(--panel);
+  height: 100%;
+  width: 100%;
+}
+@keyframes rainbow-chase {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+/* Khung nhẹ, dịu mắt — dùng cho những dòng chữ chào cần đóng khung nhẹ */
+.soft-frame {
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  border-radius: 14px;
+}
