@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DEFAULT_THEME, getStoredTheme } from "../../lib/theme";
 
@@ -63,6 +63,14 @@ function PasteIcon({ className = "" }) {
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
       <rect x="8" y="2" width="8" height="4" rx="1" />
       <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M5 12.5l4.5 4.5L19 7" />
     </svg>
   );
 }
@@ -247,6 +255,12 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   const [batchResults, setBatchResults] = useState([]); // kết quả của lần tạo link gần nhất (1 hoặc nhiều link)
   const [convertError, setConvertError] = useState("");
   const [converting, setConverting] = useState(false);
+
+  // Thông báo nhỏ ở giữa màn hình, tự hiện rồi mờ dần sau khi tạo link thành công.
+  const [toastText, setToastText] = useState("");
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastHideTimerRef = useRef(null);
+  const toastClearTimerRef = useRef(null);
   const [copiedLinkId, setCopiedLinkId] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
   const [theme, setTheme] = useState(DEFAULT_THEME);
@@ -494,6 +508,33 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     }
   }
 
+  // Hiện thông báo nhỏ giữa màn hình ~1 giây rồi tự mờ dần và biến mất.
+  function showSuccessToast(text) {
+    if (toastHideTimerRef.current) clearTimeout(toastHideTimerRef.current);
+    if (toastClearTimerRef.current) clearTimeout(toastClearTimerRef.current);
+    setToastText(text);
+    setToastVisible(true);
+    toastHideTimerRef.current = setTimeout(() => {
+      setToastVisible(false);
+      toastClearTimerRef.current = setTimeout(() => setToastText(""), 500);
+    }, 1000);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (toastHideTimerRef.current) clearTimeout(toastHideTimerRef.current);
+      if (toastClearTimerRef.current) clearTimeout(toastClearTimerRef.current);
+    };
+  }, []);
+
+  // Số link tạo thành công / tổng số link vừa gửi trong lô gần nhất — dùng cho
+  // dòng thông báo xanh lá bên dưới nút "Tạo link hoàn tiền".
+  const batchSuccessCount = useMemo(
+    () => batchResults.filter((r) => r.status === "success").length,
+    [batchResults]
+  );
+  const batchTotalCount = batchResults.length;
+
   async function handleCreateLinks(e) {
     e.preventDefault();
     setConvertError("");
@@ -550,6 +591,13 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
           saveLinkHistory(user.myId, merged);
           return merged;
         });
+        const successCount = newHistoryItems.length;
+        const totalCount = results.length;
+        showSuccessToast(
+          totalCount <= 1
+            ? "Đã tạo link hoàn tiền thành công"
+            : `Đã tạo ${successCount}/${totalCount} link hoàn tiền thành công`
+        );
       } else {
         setConvertError("Không tạo được link nào. Vui lòng kiểm tra lại link đã nhập.");
       }
@@ -704,8 +752,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 onClick={() => handleCreateModeChange("single")}
                 className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer ${
                   createMode === "single"
-                    ? "bg-[#ffcd3c] border-[#e8a800] text-[#6b4c00] shadow-sm scale-[1.03]"
-                    : "bg-[#fff6da] border-[#ffe6a0] text-[#a3781a] hover:brightness-95"
+                    ? "bg-[#ffb35c] border-[#f28c28] text-white shadow-sm scale-[1.03]"
+                    : "bg-[#fff1e0] border-[#ffd9a8] text-[#b56a12] hover:brightness-95"
                 }`}
               >
                 🎀 Tạo 1 link
@@ -776,7 +824,9 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 <button
                   type="submit"
                   disabled={converting}
-                  className="flex-1 sm:flex-none sm:w-auto bg-[#8b5fbf] hover:bg-[#9d72d1] text-white font-bold rounded-lg px-5 py-2.5 text-sm shadow-md shadow-[#8b5fbf]/40 transition-colors disabled:opacity-60 disabled:animate-none cursor-pointer animate-pulse"
+                  className={`flex-1 sm:flex-none sm:w-auto bg-[#8b5fbf] hover:bg-[#9d72d1] text-white font-bold rounded-lg px-5 py-2.5 text-sm shadow-md shadow-[#8b5fbf]/40 transition-colors disabled:opacity-60 disabled:animate-none cursor-pointer ${
+                    batchResults.length === 0 ? "animate-pulse" : ""
+                  }`}
                 >
                   {converting
                     ? "Đang tạo..."
@@ -795,6 +845,17 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   Xóa
                 </button>
               </div>
+
+              {batchSuccessCount > 0 && (
+                <div className="success-glow-green flex items-center justify-center gap-2 rounded-lg border border-[#22c55e]/40 px-3 py-2.5">
+                  <CheckIcon className="w-4 h-4 text-[#16a34a] shrink-0" />
+                  <p className="text-sm font-bold text-[#16a34a]">
+                    {batchTotalCount <= 1
+                      ? "Đã tạo link hoàn tiền thành công"
+                      : `Đã tạo ${batchSuccessCount}/${batchTotalCount} link hoàn tiền thành công`}
+                  </p>
+                </div>
+              )}
             </form>
 
             {convertError && (
@@ -853,9 +914,11 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="text-[11px] text-muted font-mono-num mb-0.5">
-                            #{idx + 1}
-                          </p>
+                          {batchResults.length > 1 && (
+                            <p className="text-[11px] text-muted font-mono-num mb-0.5">
+                              #{idx + 1}
+                            </p>
+                          )}
                           {item.productName && (
                             <p className="text-base font-bold">
                               {truncateChars(item.productName, 60)}
@@ -1594,6 +1657,22 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
           </button>
         ))}
       </nav>
+
+      {/* Thông báo tạo link thành công — hiện giữa màn hình rồi tự mờ dần */}
+      {toastText && (
+        <div
+          className={`fixed inset-0 z-[70] flex items-center justify-center px-6 pointer-events-none transition-opacity duration-500 ${
+            toastVisible ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          <div className="bg-panel border border-[#22c55e]/30 rounded-2xl shadow-2xl shadow-black/20 px-6 py-5 flex flex-col items-center gap-2 max-w-[280px]">
+            <span className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-[#22c55e]/15 text-[#16a34a]">
+              <CheckIcon className="w-6 h-6" />
+            </span>
+            <p className="text-sm font-bold text-ink text-center">{toastText}</p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
