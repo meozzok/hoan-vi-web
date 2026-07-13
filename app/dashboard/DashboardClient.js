@@ -758,8 +758,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 onClick={() => handleCreateModeChange("single")}
                 className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer ${
                   createMode === "single"
-                    ? "bg-[#ffb35c] border-[#f28c28] text-white shadow-sm scale-[1.03]"
-                    : "bg-[#fff1e0] border-[#ffd9a8] text-[#b56a12] hover:brightness-95"
+                    ? "bg-[#38bdf8] border-[#0ea5e9] text-white shadow-sm scale-[1.03]"
+                    : "bg-[#e0f2fe] border-[#7dd3fc] text-[#0369a1] hover:brightness-95"
                 }`}
               >
                 🎀 Tạo 1 link
@@ -985,7 +985,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   onClick={() => handleHistoryTabChange("all")}
                   className={`flex-1 px-4 py-2 rounded-full text-sm font-bold text-center transition-all cursor-pointer border-2 ${
                     historyTab === "all"
-                      ? "bg-highlight border-highlight text-white shadow-sm"
+                      ? "bg-[#38bdf8] border-[#0ea5e9] text-white shadow-sm"
                       : "bg-surface border-border text-muted hover:text-cream"
                   }`}
                 >
