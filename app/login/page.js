@@ -301,7 +301,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-blink-green w-full bg-[#1f6d4a] hover:bg-[#25835a] text-white font-extrabold rounded-xl py-3 text-base tracking-wide shadow-lg shadow-[#1f6d4a]/50 transition-all disabled:opacity-60 cursor-pointer mt-2 active:scale-[0.98] flex items-center justify-center gap-2"
+                className="btn-blink-green w-full bg-[#1fae66] hover:bg-[#22c55e] text-white font-extrabold rounded-xl py-3 text-base tracking-wide shadow-lg shadow-[#1fae66]/50 transition-all disabled:opacity-60 cursor-pointer mt-2 active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -309,10 +309,7 @@ export default function LoginPage() {
                     Đang xử lý...
                   </>
                 ) : (
-                  <>
-                    <CuteCatIcon className="w-4 h-4 text-white" />
-                    Đăng nhập
-                  </>
+                  "Đăng nhập"
                 )}
               </button>
 

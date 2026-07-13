@@ -34,6 +34,15 @@ function statusMeta(trangThai) {
   return STATUS_COLORS.yellow;
 }
 
+// Bộ lọc trạng thái đơn hàng hiển thị phía trên danh sách (Tất cả / Hoàn
+// thành / Chờ xử lý / Đã hủy), mỗi nút giữ đúng tông màu của trạng thái đó.
+const STATUS_FILTERS = [
+  { key: "all", label: "Tất cả", solid: "#8b5fbf", soft: STATUS_COLORS.purple.soft },
+  { key: "completed", label: "Hoàn thành", solid: "#22c55e", soft: STATUS_COLORS.green.soft },
+  { key: "pending", label: "Chờ xử lý", solid: "#eab308", soft: STATUS_COLORS.yellow.soft },
+  { key: "cancelled", label: "Đã hủy", solid: "#ef4444", soft: STATUS_COLORS.red.soft },
+];
+
 // Chiết khấu hiển thị theo từng đơn: hoa hồng gốc -> trừ thuế 11% -> còn 80% hoa hồng thực nhận.
 function commissionBreakdown(grossCommission) {
   const gross = Number(grossCommission) || 0;
@@ -167,8 +176,9 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   const [theme, setTheme] = useState(DEFAULT_THEME);
   const [activeTab, setActiveTab] = useState("link");
 
-  // Đơn hàng: tìm kiếm theo mã đơn / tên sản phẩm + phân trang.
+  // Đơn hàng: tìm kiếm theo mã đơn / tên sản phẩm + lọc theo trạng thái + phân trang.
   const [orderSearch, setOrderSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [orderPage, setOrderPage] = useState(1);
   const [pageWindowStart, setPageWindowStart] = useState(0);
 
@@ -189,13 +199,14 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
   const filteredOrders = useMemo(() => {
     const q = orderSearch.trim().toLowerCase();
-    if (!q) return orders;
     return orders.filter((o) => {
+      if (statusFilter !== "all" && classifyStatus(o.status) !== statusFilter) return false;
+      if (!q) return true;
       const id = (o.id || "").toLowerCase();
       const name = (o.productName || "").toLowerCase();
       return id.includes(q) || name.includes(q);
     });
-  }, [orders, orderSearch]);
+  }, [orders, orderSearch, statusFilter]);
 
   // Tổng số đơn trên toàn bộ đơn hàng (không phụ thuộc tìm kiếm).
   const ordersTotalCount = orders.length;
@@ -216,6 +227,12 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
   function handleSearchChange(value) {
     setOrderSearch(value);
+    setOrderPage(1);
+    setPageWindowStart(0);
+  }
+
+  function handleStatusFilterChange(value) {
+    setStatusFilter(value);
     setOrderPage(1);
     setPageWindowStart(0);
   }
@@ -335,9 +352,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   // Tiêu đề đầu trang đổi theo tab đang xem.
   let headerTitle = `Hello ${displayName}`;
   let headerIsRainbow = false;
-  if (activeTab === "orders") {
-    headerTitle = `Các đơn hàng của ${displayName} 🛍️`;
-  } else if (activeTab === "wallet") {
+  if (activeTab === "wallet") {
     headerTitle = "Tiền tiết kiệm của SẾP";
     headerIsRainbow = true;
   }
@@ -369,8 +384,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
       </header>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 pb-28 sm:pb-10">
-        <div className="mb-8">
-          {headerIsRainbow ? (
+        <div className={activeTab === "orders" ? "mb-4" : "mb-8"}>
+          {activeTab === "orders" ? null : headerIsRainbow ? (
             <div className="rainbow-frame inline-block">
               <div className="rainbow-frame-inner px-5 py-3">
                 <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-highlight">
@@ -536,35 +551,71 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         )}
 
         {activeTab === "orders" && (
-          <div className="bg-panel border border-border rounded-2xl overflow-hidden">
-            {/* Dòng tổng quan gọn: bên trái tổng số đơn, bên phải ô tìm kiếm, ngăn bởi 1 đường kẻ */}
-            <div className="p-4 sm:p-5 pb-3">
-              <div className="flex items-stretch bg-[#fff1de] border border-[#f3d3a3] rounded-full overflow-hidden">
+          <>
+            {/* Dòng tổng quan gọn: bên trái tổng số đơn, bên phải ô tìm kiếm — tách
+                riêng khỏi danh sách đơn hàng, đặt lên trên và luôn cố định (sticky)
+                khi khách cuộn xuống xem đơn. Bộ lọc trạng thái nằm ngay dưới, cùng
+                cố định theo. */}
+            <div className="sticky top-2 z-30 mb-3 flex flex-col gap-2">
+              <div className="flex items-stretch bg-[#e8f4fc] border border-[#bfe0f4] rounded-full overflow-hidden shadow-md shadow-black/5">
                 <div className="flex items-center gap-1.5 px-4 py-2 shrink-0">
-                  <span className="font-display font-extrabold text-base text-[#a4630f] tabular-nums">
+                  <span className="font-display font-extrabold text-base text-[#2f6f95] tabular-nums">
                     {ordersTotalCount}
                   </span>
-                  <span className="text-xs font-semibold text-[#a4630f]">đơn</span>
+                  <span className="text-xs font-semibold text-[#2f6f95]">đơn</span>
                 </div>
-                <div className="w-px bg-[#f3d3a3] my-2" />
+                <div className="w-px bg-[#bfe0f4] my-2" />
                 <div className="relative flex-1 flex items-center">
                   <input
                     type="text"
                     value={orderSearch}
                     onChange={(e) => handleSearchChange(e.target.value)}
                     placeholder="Nhập mã đơn hoặc tên sản phẩm..."
-                    className="w-full bg-transparent pl-4 pr-10 py-2 text-sm outline-none placeholder:text-[#a4630f]/60 text-ink"
+                    className="w-full bg-transparent pl-4 pr-16 py-2 text-sm outline-none placeholder:text-[#2f6f95]/60 text-ink"
                   />
+                  {orderSearch && (
+                    <button
+                      type="button"
+                      onClick={() => handleSearchChange("")}
+                      aria-label="Xóa tìm kiếm"
+                      title="Xóa tìm kiếm"
+                      className="absolute right-9 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-6 h-6 rounded-full text-[#2f6f95] hover:bg-[#d3ebf9] active:scale-90 transition-all cursor-pointer"
+                    >
+                      <CloseIcon className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <span
                     aria-hidden="true"
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-6 h-6 text-[#a4630f]"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-6 h-6 text-[#2f6f95]"
                   >
                     <SearchIcon className="w-4 h-4" />
                   </span>
                 </div>
               </div>
+
+              <div className="flex items-center gap-2 bg-panel border border-border rounded-full px-2 py-2 overflow-x-auto scrollbar-thin shadow-md shadow-black/5">
+                {STATUS_FILTERS.map((f) => {
+                  const active = statusFilter === f.key;
+                  return (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => handleStatusFilterChange(f.key)}
+                      className="shrink-0 px-4 py-1.5 rounded-full text-sm font-bold transition-all cursor-pointer active:scale-95"
+                      style={
+                        active
+                          ? { background: f.solid, color: "#fff", boxShadow: `0 3px 10px ${f.soft}` }
+                          : { background: f.soft, color: f.solid }
+                      }
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
+          <div className="bg-panel border border-border rounded-2xl overflow-hidden">
             {filteredOrders.length === 0 ? (
               <div className="px-7 pb-10 text-center">
                 <p className="text-muted text-sm">
@@ -574,7 +625,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             ) : (
               <>
                 {/* Dạng thẻ - dùng trên điện thoại */}
-                <div className="sm:hidden divide-y divide-border/60 border-t border-border">
+                <div className="sm:hidden flex flex-col gap-3 p-3">
                   {pagedOrders.map((order, i) => {
                     const meta = statusMeta(order.status);
                     const { gross, afterTax, final80 } = commissionBreakdown(order.commission);
@@ -582,7 +633,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                       orderOriginalNumber.get(order.id) || (orderPage - 1) * PAGE_SIZE + i + 1
                     ).padStart(2, "0");
                     return (
-                      <div key={order.id} className="px-5 py-4">
+                      <div key={order.id} className="px-5 py-4 rounded-xl border-2 border-border bg-surface/50">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="text-sm font-bold line-clamp-2">
@@ -633,9 +684,11 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Sau thuế</p>
                             <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax }}>{formatVnd(afterTax)}</p>
                           </div>
-                          <div className="text-center border border-border rounded-lg py-1.5">
-                            <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Hoa hồng thực nhận</p>
-                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80 }}>{formatVnd(final80)}</p>
+                          <div className="rainbow-cell">
+                            <div className="rainbow-cell-inner text-center py-1.5">
+                              <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Hoa hồng thực nhận</p>
+                              <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80 }}>{formatVnd(final80)}</p>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -757,6 +810,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </>
             )}
           </div>
+          </>
         )}
 
         {activeTab === "wallet" && (
