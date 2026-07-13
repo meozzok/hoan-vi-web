@@ -52,17 +52,18 @@ function commissionBreakdown(grossCommission) {
 }
 
 // Màu số tiền cho 3 ô Hoa hồng / Sau thuế / Hoa hồng thực nhận — cùng tông xanh
-// dương, đậm/sáng giảm dần theo thứ tự: Hoa hồng thực nhận (đậm & sáng nhất)
-// -> Sau thuế (trung bình) -> Hoa hồng (nhạt nhất). Mỗi mức có thêm màu khung
-// (border) và nền nhạt (soft) riêng để 3 ô cùng một kiểu khung màu đồng bộ.
+// lá cây sáng, tươi (không dùng tông đậm/xỉn), độ sáng giảm dần theo thứ tự:
+// Hoa hồng thực nhận (sáng & rực nhất) -> Sau thuế (trung bình) -> Hoa hồng (nhạt nhất).
+// Khung (border) của cả 3 ô dùng chung 1 màu tím nhạt theo tông nền của app,
+// chỉ riêng chữ số tiền là đổi màu xanh lá theo từng mức.
 const AMOUNT_COLORS = {
-  gross: { solid: "#7dd3fc", border: "rgba(125,211,252,0.55)", soft: "rgba(125,211,252,0.12)" },
-  afterTax: { solid: "#38bdf8", border: "rgba(56,189,248,0.65)", soft: "rgba(56,189,248,0.14)" },
-  final80: { solid: "#0284c7", border: "#0284c7", soft: "rgba(2,132,199,0.16)" },
+  gross: { solid: "#8ff0c4", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
+  afterTax: { solid: "#4ee0a0", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
+  final80: { solid: "#0ecb81", border: "rgba(139,95,191,0.30)", soft: "rgba(139,95,191,0.05)" },
 };
 
-// Màu xanh dương sáng dùng chung cho số tiền "Hoa hồng ước tính" ở mọi nơi.
-const ESTIMATE_BLUE = "#0ea5e9";
+// Màu xanh lá cây sáng dùng chung cho số tiền "Hoa hồng ước tính" ở mọi nơi.
+const ESTIMATE_GREEN = "#0ecb81";
 
 function PasteIcon({ className = "" }) {
   return (
@@ -932,7 +933,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                           )}
                           <p className="text-xs mt-0.5">
                             <span className="text-danger">Hoa hồng ước tính:</span>{" "}
-                            <span className="font-bold font-mono-num" style={{ color: ESTIMATE_BLUE }}>
+                            <span className="font-bold font-mono-num" style={{ color: ESTIMATE_GREEN }}>
                               {item.commissionStr}
                             </span>
                           </p>
@@ -1066,7 +1067,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             </p>
                             <p className="text-xs mt-0.5">
                               <span className="text-danger">Hoa hồng ước tính:</span>{" "}
-                              <span className="font-bold font-mono-num" style={{ color: ESTIMATE_BLUE }}>
+                              <span className="font-bold font-mono-num" style={{ color: ESTIMATE_GREEN }}>
                                 {item.commissionStr}
                               </span>
                             </p>
@@ -1137,7 +1138,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                                 </span>
                               </div>
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: ESTIMATE_BLUE }}>
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: ESTIMATE_GREEN }}>
                               {item.commissionStr}
                             </td>
                             <td className="px-4 py-3.5">
@@ -1385,7 +1386,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                           </div>
                           <div
                             className="text-center rounded-lg py-1.5"
-                            style={{ border: `1.5px solid ${AMOUNT_COLORS.final80.border}`, background: AMOUNT_COLORS.final80.soft }}
+                            style={{ border: `1px solid ${AMOUNT_COLORS.final80.border}`, background: AMOUNT_COLORS.final80.soft }}
                           >
                             <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Hoa hồng thực nhận</p>
                             <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80.solid }}>{formatVnd(final80)}</p>
