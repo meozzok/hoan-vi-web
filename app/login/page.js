@@ -176,7 +176,7 @@ export default function LoginPage() {
               💜 Hoàn tiền cao
             </span>
             <span className="text-[11px] font-bold px-2.5 py-1 rounded-full text-[#1f5c7c] bg-[#9fd0f0]/35 border border-[#9fd0f0]/50">
-              💙 Ghi nhận nhanh
+              💙 Thanh toán nhanh
             </span>
             <span className="text-[11px] font-bold px-2.5 py-1 rounded-full text-[#755613] bg-[#f5e08c]/45 border border-[#f5e08c]/60">
               💛 Uy tín
@@ -200,9 +200,13 @@ export default function LoginPage() {
             </div>
 
             {/* Lời chào — đổi ngay theo Tên gợi nhớ khách nhập */}
-            <p className="soft-frame text-center font-display font-bold text-xl mb-5 py-2.5 transition-all text-highlight">
-              Hello {nickname.trim() ? nickname.trim() : "Anh / Chị"} <span>👋</span>
-            </p>
+            <div className="rainbow-frame mb-5 inline-block w-full">
+              <div className="rainbow-frame-inner">
+                <p className="text-center font-display font-bold text-lg py-2 text-highlight">
+                  Hello {nickname.trim() ? nickname.trim() : "Anh / Chị"} <span>🌷</span>
+                </p>
+              </div>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Tên gợi nhớ */}
@@ -222,20 +226,20 @@ export default function LoginPage() {
 
               {/* Cách lấy My ID — chuyển lên trên, trước ô nhập My ID */}
               <div className="text-[11px] text-muted leading-snug space-y-2.5 bg-surface/60 border border-border rounded-xl px-3.5 py-3">
-                <p className="font-semibold text-highlight flex items-center gap-1.5 text-xs">
-                  <CuteCatIcon className="w-4 h-4 text-highlight" />
+                <p className="font-semibold text-[#d9a72c] flex items-center gap-1.5 text-xs">
+                  <CuteCatIcon className="w-4 h-4 text-[#d9a72c]" />
                   Cách lấy My ID:
                 </p>
                 <p className="flex flex-wrap items-center gap-1.5">
                   <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#8b5fbf] text-white text-[9px] font-bold shrink-0">1</span>
                   <span className="font-bold text-ink">Sao chép câu lệnh</span>
-                  <span className="inline-flex items-center gap-1 font-mono-num font-bold bg-highlight/15 text-highlight px-1.5 py-0.5 rounded-md">
+                  <span className="inline-flex items-center gap-1 font-mono-num font-bold bg-danger/15 text-danger px-1.5 py-0.5 rounded-md">
                     {MYID_COMMAND}
                     <button
                       type="button"
                       onClick={copyCommand}
                       aria-label="Sao chép câu lệnh My ID"
-                      className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-md bg-highlight text-white hover:brightness-95 active:scale-90 transition-all cursor-pointer"
+                      className="ml-0.5 inline-flex items-center justify-center w-5 h-5 rounded-md bg-danger text-white hover:brightness-95 active:scale-90 transition-all cursor-pointer"
                     >
                       {copied ? "✓" : <CopyIcon className="w-3 h-3" />}
                     </button>
@@ -250,7 +254,7 @@ export default function LoginPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setGroupLinkOpened(true)}
-                    className="inline-flex items-center gap-1 bg-highlight hover:bg-[var(--gold-soft)] text-white font-bold px-2.5 py-1 rounded-full shadow-sm shadow-[var(--highlight)]/30 active:scale-95 transition-all"
+                    className="inline-flex items-center gap-1 bg-danger hover:brightness-95 text-white font-bold px-2.5 py-1 rounded-full shadow-sm shadow-danger/30 active:scale-95 transition-all"
                   >
                     👉 Gửi Ngay
                   </a>
@@ -297,7 +301,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#4a1f7a] hover:bg-[#5c2b93] text-white font-extrabold rounded-xl py-3 text-base tracking-wide shadow-lg shadow-[#4a1f7a]/50 transition-all disabled:opacity-60 cursor-pointer mt-2 active:scale-[0.98] flex items-center justify-center gap-2"
+                className="btn-blink-green w-full bg-[#1f6d4a] hover:bg-[#25835a] text-white font-extrabold rounded-xl py-3 text-base tracking-wide shadow-lg shadow-[#1f6d4a]/50 transition-all disabled:opacity-60 cursor-pointer mt-2 active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>

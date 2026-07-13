@@ -197,12 +197,16 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     });
   }, [orders, orderSearch]);
 
-  // Tổng số đơn + tổng hoa hồng thực nhận trên toàn bộ đơn hàng (không phụ thuộc tìm kiếm).
+  // Tổng số đơn trên toàn bộ đơn hàng (không phụ thuộc tìm kiếm).
   const ordersTotalCount = orders.length;
-  const ordersTotalCommission = useMemo(
-    () => orders.reduce((sum, o) => sum + commissionBreakdown(o.commission).final80, 0),
-    [orders]
-  );
+
+  // Số thứ tự gốc của mỗi đơn (theo vị trí trong danh sách đầy đủ, chưa lọc) —
+  // để khi tìm kiếm, đơn vẫn hiển thị đúng STT ban đầu thay vì đánh số lại theo kết quả lọc.
+  const orderOriginalNumber = useMemo(() => {
+    const map = new Map();
+    orders.forEach((o, i) => map.set(o.id, i + 1));
+    return map;
+  }, [orders]);
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
   const pagedOrders = useMemo(() => {
@@ -408,9 +412,6 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
         {activeTab === "link" && (
           <div className="bg-panel border border-border rounded-2xl p-6 sm:p-7">
-            <h2 className="font-display font-bold text-lg mb-3">
-              Dán link sản phẩm {user.displayName ? user.displayName : "bạn"} muốn mua
-            </h2>
             <div className="rainbow-frame mb-5 inline-block w-full">
               <div className="rainbow-frame-inner px-4 py-2.5">
                 <p className="text-highlight text-sm font-bold text-center">
@@ -536,42 +537,30 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
         {activeTab === "orders" && (
           <div className="bg-panel border border-border rounded-2xl overflow-hidden">
-            {/* Khung tổng quan + tìm kiếm, 2 ô liền nhau trên 1 dòng */}
-            <div className="p-6 sm:p-7 pb-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="bg-panel-2 border border-border rounded-xl px-4 py-3.5">
-                  <p className="text-[11px] text-muted uppercase tracking-widest mb-1">Tổng tất cả đơn hàng</p>
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="font-display font-extrabold text-2xl text-highlight tabular-nums">
-                      {ordersTotalCount}
-                    </span>
-                    <span className="text-xs text-muted">đơn</span>
-                  </div>
-                  <p className="text-xs mt-1">
-                    <span className="text-muted">Tổng hoa hồng thực nhận: </span>
-                    <span className="font-mono-num font-bold text-[#16c261]">
-                      {formatVnd(ordersTotalCommission)}
-                    </span>
-                  </p>
+            {/* Dòng tổng quan gọn: bên trái tổng số đơn, bên phải ô tìm kiếm, ngăn bởi 1 đường kẻ */}
+            <div className="p-4 sm:p-5 pb-3">
+              <div className="flex items-stretch bg-[#fff1de] border border-[#f3d3a3] rounded-full overflow-hidden">
+                <div className="flex items-center gap-1.5 px-4 py-2 shrink-0">
+                  <span className="font-display font-extrabold text-base text-[#a4630f] tabular-nums">
+                    {ordersTotalCount}
+                  </span>
+                  <span className="text-xs font-semibold text-[#a4630f]">đơn</span>
                 </div>
-
-                <div className="bg-panel-2 border border-border rounded-xl px-4 py-3.5 flex flex-col justify-center">
-                  <p className="text-[11px] text-muted uppercase tracking-widest mb-1.5">Tìm kiếm đơn hàng</p>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={orderSearch}
-                      onChange={(e) => handleSearchChange(e.target.value)}
-                      placeholder="Nhập mã đơn hoặc tên sản phẩm..."
-                      className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-11 py-2.5 text-sm outline-none focus:border-highlight transition-colors placeholder:text-muted/60"
-                    />
-                    <span
-                      aria-hidden="true"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 rounded-md bg-highlight text-white"
-                    >
-                      <SearchIcon className="w-4 h-4" />
-                    </span>
-                  </div>
+                <div className="w-px bg-[#f3d3a3] my-2" />
+                <div className="relative flex-1 flex items-center">
+                  <input
+                    type="text"
+                    value={orderSearch}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    placeholder="Nhập mã đơn hoặc tên sản phẩm..."
+                    className="w-full bg-transparent pl-4 pr-10 py-2 text-sm outline-none placeholder:text-[#a4630f]/60 text-ink"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-6 h-6 text-[#a4630f]"
+                  >
+                    <SearchIcon className="w-4 h-4" />
+                  </span>
                 </div>
               </div>
             </div>
@@ -589,7 +578,9 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   {pagedOrders.map((order, i) => {
                     const meta = statusMeta(order.status);
                     const { gross, afterTax, final80 } = commissionBreakdown(order.commission);
-                    const orderNumber = String((orderPage - 1) * PAGE_SIZE + i + 1).padStart(2, "0");
+                    const orderNumber = String(
+                      orderOriginalNumber.get(order.id) || (orderPage - 1) * PAGE_SIZE + i + 1
+                    ).padStart(2, "0");
                     return (
                       <div key={order.id} className="px-5 py-4">
                         <div className="flex items-start justify-between gap-3">
@@ -671,7 +662,9 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                       {pagedOrders.map((order, i) => {
                         const meta = statusMeta(order.status);
                         const { gross, afterTax, final80 } = commissionBreakdown(order.commission);
-                        const orderNumber = String((orderPage - 1) * PAGE_SIZE + i + 1).padStart(2, "0");
+                        const orderNumber = String(
+                          orderOriginalNumber.get(order.id) || (orderPage - 1) * PAGE_SIZE + i + 1
+                        ).padStart(2, "0");
                         return (
                           <tr key={order.id} className="border-t border-border/60">
                             <td className="px-7 py-3.5">
