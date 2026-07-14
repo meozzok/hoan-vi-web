@@ -940,8 +940,10 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         </div>
 
         {activeTab === "link" && (
-          <div className="bg-panel border border-border rounded-2xl p-6 sm:p-7">
-            <div className="rainbow-frame mb-5 inline-block w-full">
+          <div className="space-y-5">
+            {/* Khung độc lập: dòng nhắc "Tiền kiếm khó lắm..." — không còn
+                dùng chung khung lớn với ô tạo link bên dưới nữa. */}
+            <div className="rainbow-frame inline-block w-full">
               <div className="rainbow-frame-inner px-4 py-2.5">
                 <p className="text-highlight text-sm font-bold text-center">
                   Tiền kiếm khó lắm. Nhớ tiết kiệm nhé!
@@ -949,8 +951,9 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </div>
             </div>
 
-            {/* Khung gộp: từ nút chọn chế độ đến dòng lưu ý quan trọng — đóng thành 1 khối */}
-            <div className="rounded-2xl border-2 border-border/70 p-4 sm:p-5">
+            {/* Khung độc lập của chính nó: từ nút chọn chế độ đến dòng lưu ý
+                quan trọng — tách hẳn khỏi khung nhắc nhở tiết kiệm ở trên. */}
+            <div className="bg-panel border border-border rounded-2xl p-5 sm:p-6">
               {/* Chọn chế độ: tạo 1 link hoặc nhiều link cùng lúc (tối đa 10 link) */}
               <div className="flex items-center justify-between gap-3 mb-4">
                 <button
@@ -1003,12 +1006,12 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     <div className="relative">
                       <textarea
                         required
-                        rows={3}
+                        rows={4}
                         value={multiUrlsText}
                         onChange={(e) => setMultiUrlsText(e.target.value)}
                         onPaste={handleMultiPaste}
-                        placeholder="Dán link sản phẩm vào đây!"
-                        className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-14 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60 resize-y"
+                        placeholder={"Dán link sản phẩm vào đây!\n(Mỗi link 1 dòng, tối đa 10 link)"}
+                        className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-14 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60 placeholder:leading-relaxed resize-y"
                       />
                       <button
                         type="button"
@@ -1196,13 +1199,13 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             lắm..." / khung tạo link ở trên, tự ẩn khi đã tạo link thành công.
             Cách đều và cách xa cả khung trên lẫn khung "Lịch sử tạo link". */}
         {activeTab === "link" && batchSuccessCount === 0 && (
-          <div className="mt-10 mb-10">
+          <div className="mt-5 mb-5">
             <CtaStepTracker />
           </div>
         )}
 
         {activeTab === "link" && (
-          <div className="mt-10 bg-panel border border-border rounded-2xl">
+          <div className="mt-5 bg-panel border border-border rounded-2xl">
             <div className="sticky top-2 z-20 bg-panel rounded-t-2xl p-5 sm:p-6 pb-4 border-b border-border/60 shadow-sm shadow-black/5">
               <p className="font-display font-bold text-lg mb-3 text-center" style={{ color: "#8b5fbf" }}>Lịch sử tạo link</p>
               <div className="flex items-stretch gap-2 w-full">
