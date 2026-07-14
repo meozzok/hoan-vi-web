@@ -166,7 +166,7 @@ function formatTrackTime(seconds) {
 // là avatar tròn có nút bật/tắt, viền SVG (gradient hồng-đỏ) vẽ theo tiến
 // trình phát và tự xoay ngược chiều với avatar. Bài hát bị khoá nếu khách
 // chưa đủ số đơn hoàn thành theo yêu cầu — không thể bấm phát hay tua.
-function MusicTrackCard({ track, index, completedOrders }) {
+function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequestPlay }) {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0); // 0-100
@@ -175,11 +175,21 @@ function MusicTrackCard({ track, index, completedOrders }) {
 
   const RADIUS = 27;
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-  const gradientId = `music-ring-gradient-${track.id}`;
+  const RING_BG_COLOR = "#ec4899"; // hồng — vòng nền, giống nhau ở mọi bài
+  const RING_PROGRESS_COLOR = "#ef4444"; // đỏ — vòng tiến trình, giống nhau ở mọi bài
 
   const required = track.requiredOrders || 1;
   const doneForBadge = Math.min(completedOrders, required);
   const isLocked = completedOrders < required;
+  const badgeColor = isLocked ? "#9ca3af" : "#16c261";
+
+  // Có bài khác đang phát (không phải bài này) → tự dừng bài này lại, đảm bảo
+  // chỉ 1 bài phát cùng lúc trong toàn bộ danh sách.
+  useEffect(() => {
+    if (nowPlayingId && nowPlayingId !== track.id && audioRef.current && !audioRef.current.paused) {
+      audioRef.current.pause();
+    }
+  }, [nowPlayingId, track.id]);
 
   function togglePlay() {
     if (isLocked) return;
@@ -188,6 +198,7 @@ function MusicTrackCard({ track, index, completedOrders }) {
     if (isPlaying) {
       audio.pause();
     } else {
+      onRequestPlay(track.id);
       audio.play().catch(() => {});
     }
   }
@@ -206,7 +217,7 @@ function MusicTrackCard({ track, index, completedOrders }) {
     <div className={`bg-surface border border-border rounded-xl p-4 flex items-center gap-3 ${isLocked ? "opacity-80" : ""}`}>
       <div className="flex flex-col items-center justify-center text-center w-14 shrink-0">
         <span className="text-[10px] text-muted leading-tight">Hoàn thành</span>
-        <span className="font-mono-num text-xs font-bold text-[#e0524f] leading-tight">
+        <span className="font-mono-num text-xs font-bold leading-tight" style={{ color: badgeColor }}>
           {doneForBadge}/{required}
         </span>
         <span className="text-[10px] text-muted leading-tight">đơn</span>
@@ -219,18 +230,13 @@ function MusicTrackCard({ track, index, completedOrders }) {
             isPlaying ? " is-playing" : ""
           }`}
         >
-          <defs>
-            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#f472b6" />
-              <stop offset="100%" stopColor="#ef4444" />
-            </linearGradient>
-          </defs>
           <circle
             cx="32"
             cy="32"
             r={RADIUS}
             fill="none"
-            stroke="var(--color-border, rgba(139,95,191,0.25))"
+            stroke={RING_BG_COLOR}
+            strokeOpacity="0.35"
             strokeWidth="3.5"
           />
           <circle
@@ -238,7 +244,7 @@ function MusicTrackCard({ track, index, completedOrders }) {
             cy="32"
             r={RADIUS}
             fill="none"
-            stroke={`url(#${gradientId})`}
+            stroke={RING_PROGRESS_COLOR}
             strokeWidth="3.5"
             strokeLinecap="round"
             strokeDasharray={CIRCUMFERENCE}
@@ -280,7 +286,10 @@ function MusicTrackCard({ track, index, completedOrders }) {
           ref={audioRef}
           src={track.src}
           preload="none"
-          onPlay={() => setIsPlaying(true)}
+          onPlay={() => {
+            setIsPlaying(true);
+            onRequestPlay(track.id);
+          }}
           onPause={() => setIsPlaying(false)}
           onEnded={() => setIsPlaying(false)}
           onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
@@ -563,11 +572,19 @@ const MUSIC_TRACKS = [
   },
   {
     id: "bai-2",
-    title: "Bài 2",
+    title: "Anh Nên Yêu Cô Ấy - N Ly",
     src: "/music/bai-2.mp3",
     cover: "/music/bai-1-avatar.png",
     sourceUrl: "",
     requiredOrders: 2,
+  },
+  {
+    id: "bai-3",
+    title: "Cạn Tình Như Thế - Kiều Chi Cover",
+    src: "/music/bai-3.mp3",
+    cover: "/music/bai-1-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 50,
   },
 ];
 
@@ -785,6 +802,10 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     () => orders.filter((o) => classifyStatus(o.status) === "completed").length,
     [orders]
   );
+
+  // Bài đang phát ở tab Music (id) — chỉ 1 bài được phát cùng lúc, bật bài
+  // khác thì bài đang phát tự tắt.
+  const [nowPlayingId, setNowPlayingId] = useState(null);
 
   // Số thứ tự gốc của mỗi đơn (theo vị trí trong danh sách đầy đủ, chưa lọc) —
   // để khi tìm kiếm, đơn vẫn hiển thị đúng STT ban đầu thay vì đánh số lại theo kết quả lọc.
@@ -2119,6 +2140,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   track={track}
                   index={idx}
                   completedOrders={completedOrdersCount}
+                  nowPlayingId={nowPlayingId}
+                  onRequestPlay={setNowPlayingId}
                 />
               ))}
             </div>

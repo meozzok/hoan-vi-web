@@ -234,20 +234,24 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Khung tên khách hàng (vd "Hello Bích") — phong cách sang trọng,
-   thanh lịch, tĩnh (không nhấp nháy/chạy sáng): viền vàng kim tĩnh,
-   nền xám xanh dương (slate), chữ đứng thẳng dát vàng tĩnh.
+   Khung tên khách hàng (vd "Hello Bích") — viền cầu vồng chạy sáng
+   liên tục, nền sáng, chữ đậm màu đỏ cam nổi bật.
    ───────────────────────────────────────────────────────────── */
 .vip-name-frame {
   position: relative;
-  padding: 2px;
+  padding: 3px;
   border-radius: 18px;
-  background: linear-gradient(135deg, #c9a86a 0%, #8a6a3a 50%, #c9a86a 100%);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+  background: linear-gradient(
+    90deg,
+    #ff4d4d, #ff9d3b, #ffe93b, #4dd67a, #3bb8ff, #8a5cff, #ff4d4d
+  );
+  background-size: 300% 100%;
+  animation: rainbow-chase 5s linear infinite;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
 }
 .vip-name-frame-inner {
-  border-radius: 16px;
-  background: linear-gradient(135deg, #55606f 0%, #3d4653 55%, #2c333e 100%);
+  border-radius: 15px;
+  background: var(--panel);
   height: 100%;
   width: 100%;
   padding: 0.7rem 1.35rem;
@@ -260,7 +264,7 @@ body {
   font-style: normal;
   font-weight: 700;
   letter-spacing: 0.01em;
-  color: #f0d99a;
+  color: #e0524f;
 }
 .vip-name-input {
   font-family: var(--font-elegant), serif;
@@ -268,12 +272,12 @@ body {
   font-weight: 700;
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(240, 217, 154, 0.55);
-  color: #f0d99a;
+  border-bottom: 1px solid rgba(224, 82, 79, 0.55);
+  color: #e0524f;
   outline: none;
 }
 .vip-name-input:focus {
-  border-bottom-color: #c9a86a;
+  border-bottom-color: #e0524f;
 }
 .vip-edit-btn-outside {
   width: 34px;
