@@ -188,31 +188,76 @@ function ImportantNotice({ expanded, onToggle }) {
   );
 }
 
-// Băng chạy vui mắt "Tạo Link → Mua Ngay → Đặt Hàng → Hoàn Tiền" hiển thị
-// trước khi tạo link, tự ẩn đi ngay khi tạo link thành công.
-function CtaMarquee() {
-  const phrase = (
-    <span className="cta-marquee-phrase">
-      <span>🔗 Tạo Link</span>
-      <span className="cta-arrow">➜</span>
-      <span>🛍️ Mua Ngay</span>
-      <span className="cta-arrow">➜</span>
-      <span>📦 Đặt Hàng</span>
-      <span className="cta-arrow">➜</span>
-      <span className="cta-highlight">Hoàn Tiền</span>
-    </span>
-  );
+// Icon nhỏ dùng riêng cho từng nút trong step-tracker "Dán Link → Mua Ngay →
+// Đặt Hàng → Hoàn Tiền" (khung riêng, nền hồng, viền + chữ đỏ, đèn chạy trên
+// thanh nối rồi bắn pháo hoa khi tới nút Hoàn Tiền).
+function StepCartIcon({ className = "" }) {
   return (
-    <div className="cta-marquee-frame">
-      <div className="cta-marquee-frame-inner">
-        <div className="cta-marquee-track">
-          {phrase}
-          {phrase}
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="9" cy="20" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="20" r="1.4" fill="currentColor" stroke="none" />
+      <path d="M2.5 3h2l2.2 11.4a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.6L21 7H6" />
+    </svg>
+  );
+}
+function StepBoxIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5v-9Z" />
+      <path d="M3.5 7.5 12 12l8.5-4.5M12 12v9" />
+    </svg>
+  );
+}
+function StepDollarIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 6.5v11M15 9.2c0-1.2-1.3-2-3-2s-3 .9-3 2.1c0 1.2 1.3 1.6 3 1.9s3 .8 3 2c0 1.2-1.3 2.1-3 2.1s-3-.8-3-2" />
+    </svg>
+  );
+}
+
+const STEP_TRACKER_ITEMS = [
+  { key: "link", label: "Dán Link", Icon: LinkTabIcon },
+  { key: "buy", label: "Mua Ngay", Icon: StepCartIcon },
+  { key: "order", label: "Đặt Hàng", Icon: StepBoxIcon },
+  { key: "cashback", label: "Hoàn Tiền", Icon: StepDollarIcon },
+];
+
+// Khung riêng "Dán Link → Mua Ngay → Đặt Hàng → Hoàn Tiền": nền hồng, 4 khung
+// tròn + chữ màu đỏ, có đèn chạy trên thanh nối các nút và bắn pháo hoa khi
+// đèn chạy tới nút Hoàn Tiền. Hiển thị trước khi tạo link, tự ẩn đi ngay khi
+// tạo link thành công (đổi sang khung "Đã tạo link hoàn tiền thành công").
+function CtaStepTracker() {
+  return (
+    <div className="step-tracker-frame">
+      <div className="step-tracker-track">
+        <span className="step-tracker-line" aria-hidden="true" />
+        <span className="step-tracker-runner" aria-hidden="true" />
+        <span className="step-tracker-fireworks" aria-hidden="true">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <span key={i} className={`step-tracker-spark step-tracker-spark-${i}`} />
+          ))}
+        </span>
+        <div className="step-tracker-row">
+          {STEP_TRACKER_ITEMS.map((step) => (
+            <div key={step.key} className="step-tracker-item">
+              <span
+                className={`step-tracker-circle${
+                  step.key === "cashback" ? " step-tracker-circle-final" : ""
+                }`}
+              >
+                <step.Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+              </span>
+              <span className="step-tracker-label">{step.label}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
+
 
 function HeartIcon({ className = "", filled = false }) {
   return (
@@ -1009,18 +1054,6 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   )}
                 </div>
 
-                {batchSuccessCount > 0 && (
-                  <div className="flex justify-center pt-2.5 mt-3 border-t border-border/40">
-                    <div className="success-glow-green inline-flex items-center gap-2 rounded-lg border border-[#22c55e]/40 px-3.5 py-2">
-                      <CheckIcon className="w-4 h-4 text-[#16a34a] shrink-0" />
-                      <p className="text-sm font-bold text-[#16a34a] whitespace-nowrap">
-                        {batchTotalCount <= 1
-                          ? "Đã tạo link hoàn tiền thành công"
-                          : `Đã tạo ${batchSuccessCount}/${batchTotalCount} link hoàn tiền thành công`}
-                      </p>
-                    </div>
-                  </div>
-                )}
               </form>
 
               {convertError && (
@@ -1030,12 +1063,35 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               )}
 
               {batchSuccessCount === 0 && (
-                <div className="mt-4 space-y-3">
+                <div className="mt-4">
                   <ImportantNotice expanded={mainNoticeOpen} onToggle={() => setMainNoticeOpen((v) => !v)} />
-                  <CtaMarquee />
                 </div>
               )}
             </div>
+
+            {/* Khung riêng: "Đã tạo link hoàn tiền thành công" — không dùng
+                chung khung với "Tạo 1 link / Tạo nhiều link" ở trên. */}
+            {batchSuccessCount > 0 && (
+              <div className="mt-4 flex justify-center">
+                <div className="success-glow-green inline-flex items-center gap-2 rounded-xl border border-[#22c55e]/40 px-4 py-2.5">
+                  <CheckIcon className="w-4 h-4 text-[#16a34a] shrink-0" />
+                  <p className="text-sm font-bold text-[#16a34a] whitespace-nowrap">
+                    {batchTotalCount <= 1
+                      ? "Đã tạo link hoàn tiền thành công"
+                      : `Đã tạo ${batchSuccessCount}/${batchTotalCount} link hoàn tiền thành công`}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Khung riêng: step-tracker "Dán Link → Mua Ngay → Đặt Hàng →
+                Hoàn Tiền" — không dùng chung khung với "Tạo 1 link / Tạo
+                nhiều link" ở trên, tự ẩn khi đã tạo link thành công. */}
+            {batchSuccessCount === 0 && (
+              <div className="mt-4">
+                <CtaStepTracker />
+              </div>
+            )}
 
             {batchResults.length > 0 && (
               <div className="mt-5 space-y-3">
@@ -1061,24 +1117,28 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                       key={r.key}
                       className="relative bg-surface border border-border rounded-lg p-4"
                     >
-                      <button
-                        type="button"
-                        onClick={() => toggleFavoriteLink(item.id)}
-                        aria-label={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
-                        title={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
-                        className="absolute top-3 right-3 inline-flex items-center justify-center w-8 h-8 rounded-full bg-panel border border-border text-[#ef4444] hover:brightness-95 active:scale-90 transition-all cursor-pointer"
-                      >
-                        <HeartIcon className="w-4 h-4" filled={item.favorite} />
-                      </button>
-
-                      <div className="mb-3">
+                      {/* Dòng "Lưu ý quan trọng để được hoàn tiền" nằm riêng 1
+                          hàng, phía trên nút yêu thích — không chung dòng. */}
+                      <div className="mb-2">
                         <ImportantNotice
                           expanded={!!expandedNotes[item.id]}
                           onToggle={() => toggleNotice(item.id)}
                         />
                       </div>
 
-                      <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border/60 pr-10">
+                      <div className="flex justify-end mb-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleFavoriteLink(item.id)}
+                          aria-label={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                          title={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-panel border border-border text-[#ef4444] hover:brightness-95 active:scale-90 transition-all cursor-pointer"
+                        >
+                          <HeartIcon className="w-4 h-4" filled={item.favorite} />
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border/60">
                         {item.image ? (
                           <img
                             src={item.image}
@@ -1118,13 +1178,13 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                           href={item.convertedUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="btn-blink-green flex-[2] text-center bg-[#16c261] hover:bg-[#12a852] text-white text-sm font-bold rounded-lg px-3.5 py-3 shadow-md shadow-[#16c261]/40 transition-all active:scale-[0.98] cursor-pointer"
+                          className="btn-blink-green flex-[2.2] inline-flex items-center justify-center text-center bg-[#16c261] hover:bg-[#12a852] text-white text-base sm:text-lg font-extrabold rounded-lg px-3.5 py-3 shadow-md shadow-[#16c261]/40 transition-all active:scale-[0.98] cursor-pointer"
                         >
                           🛍️ Mua Ngay
                         </a>
                         <button
                           onClick={() => handleCopyLink(item.convertedUrl, item.id)}
-                          className="flex-1 bg-white hover:bg-white/90 text-ink border border-border text-sm font-semibold rounded-lg px-3.5 py-3 transition-all active:scale-[0.98] cursor-pointer"
+                          className="flex-[0.9] inline-flex items-center justify-center whitespace-nowrap bg-white hover:bg-white/90 text-ink border border-border text-xs font-semibold rounded-lg px-2 py-3 transition-all active:scale-[0.98] cursor-pointer"
                         >
                           {copiedLinkId === item.id ? "Đã chép ✓" : "📋 Sao chép"}
                         </button>

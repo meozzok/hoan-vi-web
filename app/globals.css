@@ -321,74 +321,150 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Băng chạy "Tạo Link → Mua Ngay → Đặt Hàng → Hoàn Tiền" — hiển
-   thị trước khi tạo link, tự ẩn sau khi tạo link thành công.
+   Step-tracker riêng "Dán Link → Mua Ngay → Đặt Hàng → Hoàn Tiền"
+   — nền hồng, 4 khung tròn + chữ màu đỏ, có đèn chạy trên thanh nối
+   các nút, khi đèn chạy tới nút Hoàn Tiền thì bắn pháo hoa tung tóe.
+   Hiển thị trước khi tạo link, tự ẩn sau khi tạo link thành công.
    ───────────────────────────────────────────────────────────── */
-.cta-marquee-frame {
+.step-tracker-frame {
+  background: linear-gradient(180deg, #ffd7e6, #ffc2da);
+  border: 1.5px solid #ffabc9;
+  border-radius: 18px;
+  padding: 20px 14px 14px;
+}
+.step-tracker-track {
   position: relative;
-  overflow: hidden;
-  border-radius: 14px;
-  padding: 2px;
-  background: linear-gradient(90deg, #ff9d3b, #ff4d8d, #8a5cff, #3bb8ff, #4dd67a, #ffe93b, #ff9d3b);
-  background-size: 300% 100%;
-  animation: rainbow-chase 6s linear infinite;
 }
-.cta-marquee-frame-inner {
-  border-radius: 12px;
-  background: var(--panel);
-  overflow: hidden;
-  padding: 10px 0;
-}
-.cta-marquee-track {
+.step-tracker-row {
+  position: relative;
+  z-index: 2;
   display: flex;
-  width: max-content;
-  animation: cta-marquee-scroll 10s linear infinite;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.step-tracker-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 25%;
+}
+.step-tracker-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #fff0f5;
+  border: 2.5px solid #d6362f;
+  color: #d6362f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(214, 54, 47, 0.18);
+}
+.step-tracker-circle-final {
+  animation: step-tracker-final-pulse 3.6s ease-in-out infinite;
+}
+@keyframes step-tracker-final-pulse {
+  0%, 74% { box-shadow: 0 2px 6px rgba(214, 54, 47, 0.18); }
+  82% { box-shadow: 0 0 0 8px rgba(214, 54, 47, 0.28), 0 0 22px 4px rgba(255, 196, 0, 0.7); }
+  100% { box-shadow: 0 2px 6px rgba(214, 54, 47, 0.18); }
+}
+.step-tracker-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #d6362f;
+  text-align: center;
   white-space: nowrap;
 }
-@keyframes cta-marquee-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+@media (min-width: 640px) {
+  .step-tracker-label {
+    font-size: 13px;
+  }
+  .step-tracker-circle {
+    width: 50px;
+    height: 50px;
+  }
 }
-.cta-marquee-phrase {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-weight: 800;
-  font-size: 14px;
-  color: var(--ink);
-  padding: 0 2rem;
-}
-.cta-arrow {
-  opacity: 0.45;
-  font-size: 12px;
-}
-.cta-highlight {
-  position: relative;
-  display: inline-block;
-  color: #ff6a00;
-  animation: cta-glow 1.6s ease-in-out infinite;
-}
-.cta-highlight::before,
-.cta-highlight::after {
-  content: "✨";
+
+/* Thanh nối ngang giữa 4 khung tròn, chạy qua tâm các vòng tròn */
+.step-tracker-line {
   position: absolute;
-  font-size: 12px;
-  animation: cta-spark 1.6s ease-in-out infinite;
+  z-index: 1;
+  top: 22px;
+  left: 12.5%;
+  right: 12.5%;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(214, 54, 47, 0.28);
 }
-.cta-highlight::before {
-  left: -16px;
-  top: -8px;
+@media (min-width: 640px) {
+  .step-tracker-line {
+    top: 25px;
+  }
 }
-.cta-highlight::after {
-  right: -16px;
-  top: -8px;
-  animation-delay: 0.35s;
+
+/* Đèn chạy dọc theo thanh nối, từ nút "Dán Link" tới nút "Hoàn Tiền" */
+.step-tracker-runner {
+  position: absolute;
+  z-index: 1;
+  top: 17px;
+  left: 12.5%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #fff6e0 0%, #ffc400 45%, #ff5252 100%);
+  box-shadow: 0 0 10px 3px rgba(255, 82, 82, 0.75);
+  animation: step-tracker-runner-move 3.6s linear infinite;
 }
-@keyframes cta-glow {
-  0%, 100% { text-shadow: 0 0 2px rgba(255, 106, 0, 0.15); }
-  50% { text-shadow: 0 0 10px rgba(255, 106, 0, 0.9), 0 0 22px rgba(255, 180, 0, 0.65); }
+@media (min-width: 640px) {
+  .step-tracker-runner {
+    top: 20px;
+  }
 }
-@keyframes cta-spark {
-  0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
-  50% { opacity: 1; transform: scale(1.2) rotate(25deg); }
+@keyframes step-tracker-runner-move {
+  0% { left: 12.5%; opacity: 1; }
+  76% { left: 87.5%; opacity: 1; }
+  80% { opacity: 0; }
+  100% { opacity: 0; left: 12.5%; }
+}
+
+/* Pháo hoa bắn tung tóe quanh nút "Hoàn Tiền" ngay khi đèn chạy tới nơi */
+.step-tracker-fireworks {
+  position: absolute;
+  z-index: 3;
+  top: 22px;
+  left: 87.5%;
+  width: 0;
+  height: 0;
+}
+@media (min-width: 640px) {
+  .step-tracker-fireworks {
+    top: 25px;
+  }
+}
+.step-tracker-spark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 999px;
+  opacity: 0;
+  animation: step-tracker-spark-burst 3.6s ease-out infinite;
+}
+.step-tracker-spark-0 { background: #ff5252; --tx: 0px; --ty: -34px; }
+.step-tracker-spark-1 { background: #ffc400; --tx: 24px; --ty: -24px; }
+.step-tracker-spark-2 { background: #ff8a3d; --tx: 34px; --ty: 0px; }
+.step-tracker-spark-3 { background: #ff4d8d; --tx: 24px; --ty: 24px; }
+.step-tracker-spark-4 { background: #ffe93b; --tx: 0px; --ty: 34px; }
+.step-tracker-spark-5 { background: #ff5252; --tx: -24px; --ty: 24px; }
+.step-tracker-spark-6 { background: #ffc400; --tx: -34px; --ty: 0px; }
+.step-tracker-spark-7 { background: #ff8a3d; --tx: -24px; --ty: -24px; }
+@keyframes step-tracker-spark-burst {
+  0%, 75% { opacity: 0; transform: translate(0, 0) scale(0.3); }
+  80% { opacity: 1; transform: translate(0, 0) scale(1); }
+  95% { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1); }
+  100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.4); }
 }
