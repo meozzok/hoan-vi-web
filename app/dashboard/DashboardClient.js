@@ -1747,7 +1747,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         {activeTab === "wallet" && (
           <div className="ticket-notch bg-panel border border-border rounded-2xl overflow-hidden max-w-md">
             <div className="p-6 sm:p-7">
-              <p className="text-xs text-muted uppercase tracking-widest mb-2">Có sẵn để rút</p>
+              <p className="text-xs text-muted uppercase tracking-widest mb-2 font-bold">Có sẵn để rút</p>
               <div className="inline-block border border-[#8fe0b0] bg-[#e9fbf1] rounded-xl px-4 py-2.5">
                 <p className="font-display font-bold text-4xl text-[#16c261] tabular-nums">
                   {wallet ? formatVnd(wallet.coTheRutHien) : "—"}
