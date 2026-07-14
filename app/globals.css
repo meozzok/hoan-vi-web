@@ -265,21 +265,6 @@ body {
   background-clip: text;
   color: transparent;
 }
-.vip-edit-btn {
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #f0dcae;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-  border: 1px solid rgba(240, 220, 174, 0.25);
-}
-.vip-edit-btn:hover {
-  background: rgba(255, 255, 255, 0.22);
-}
 .vip-name-input {
   font-family: var(--font-elegant), serif;
   font-style: italic;
@@ -292,15 +277,118 @@ body {
 .vip-name-input:focus {
   border-bottom-color: #e9c98a;
 }
-
-/* Dòng cảnh báo "⚠️ Lưu ý để được ghi nhận đơn này" — nền vàng nhạt sáng,
-   không viền, ôm vừa nội dung (thon gọn), dùng làm nút mở/đóng 5 lưu ý. */
-.notice-pill {
-  background: #fff4b8;
-  border: none;
+.vip-edit-btn-outside {
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
-  padding: 5px 12px;
+  background: var(--panel);
+  color: #8b5fbf;
+  border: 1.5px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(111, 63, 174, 0.15);
+  transition: all 0.15s ease;
 }
-.notice-pill:hover {
-  background: #ffee9e;
+.vip-edit-btn-outside:hover {
+  background: var(--panel-2);
+  transform: scale(1.06);
+}
+
+/* Dòng cảnh báo "⚠️ Lưu ý quan trọng để được hoàn tiền" — nền vàng nhạt sáng,
+   không viền. Tiêu đề + 5 gạch đầu dòng nằm chung 1 khối (không tách ô). */
+.notice-box {
+  background: #fff4b8;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.notice-box-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px;
+  background: transparent;
+  border: none;
+  text-align: left;
+}
+.notice-box-body {
+  padding: 0 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Băng chạy "Tạo Link → Mua Ngay → Đặt Hàng → Hoàn Tiền" — hiển
+   thị trước khi tạo link, tự ẩn sau khi tạo link thành công.
+   ───────────────────────────────────────────────────────────── */
+.cta-marquee-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  padding: 2px;
+  background: linear-gradient(90deg, #ff9d3b, #ff4d8d, #8a5cff, #3bb8ff, #4dd67a, #ffe93b, #ff9d3b);
+  background-size: 300% 100%;
+  animation: rainbow-chase 6s linear infinite;
+}
+.cta-marquee-frame-inner {
+  border-radius: 12px;
+  background: var(--panel);
+  overflow: hidden;
+  padding: 10px 0;
+}
+.cta-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: cta-marquee-scroll 10s linear infinite;
+  white-space: nowrap;
+}
+@keyframes cta-marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.cta-marquee-phrase {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--ink);
+  padding: 0 2rem;
+}
+.cta-arrow {
+  opacity: 0.45;
+  font-size: 12px;
+}
+.cta-highlight {
+  position: relative;
+  display: inline-block;
+  color: #ff6a00;
+  animation: cta-glow 1.6s ease-in-out infinite;
+}
+.cta-highlight::before,
+.cta-highlight::after {
+  content: "✨";
+  position: absolute;
+  font-size: 12px;
+  animation: cta-spark 1.6s ease-in-out infinite;
+}
+.cta-highlight::before {
+  left: -16px;
+  top: -8px;
+}
+.cta-highlight::after {
+  right: -16px;
+  top: -8px;
+  animation-delay: 0.35s;
+}
+@keyframes cta-glow {
+  0%, 100% { text-shadow: 0 0 2px rgba(255, 106, 0, 0.15); }
+  50% { text-shadow: 0 0 10px rgba(255, 106, 0, 0.9), 0 0 22px rgba(255, 180, 0, 0.65); }
+}
+@keyframes cta-spark {
+  0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.2) rotate(25deg); }
 }

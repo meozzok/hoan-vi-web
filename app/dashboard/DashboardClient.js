@@ -152,6 +152,68 @@ function ChevronDownIcon({ className = "" }) {
   );
 }
 
+// Ô "Lưu ý quan trọng để được hoàn tiền" — dùng chung ở cả trên đầu mỗi sản
+// phẩm vừa tạo lẫn ngay trước khi bấm nút tạo link. Tiêu đề + 5 gạch đầu dòng
+// nằm chung 1 khối nền vàng nhạt, không tách thành 2 ô riêng.
+function ImportantNotice({ expanded, onToggle }) {
+  return (
+    <div className="notice-box">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        className="notice-box-header cursor-pointer"
+      >
+        <span className="text-[12.5px] sm:text-sm font-bold not-italic text-[#d6362f]">
+          ⚠️ Lưu ý quan trọng để được hoàn tiền
+        </span>
+        <ChevronDownIcon
+          className={`w-3.5 h-3.5 text-[#d6362f] shrink-0 transition-transform ${
+            expanded ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      {expanded && (
+        <div className="notice-box-body">
+          <p className="text-[13px] font-bold not-italic text-[#d6362f]">1. Xóa sản phẩm này khỏi giỏ hàng (nếu có) ✅</p>
+          <p className="text-[13px] font-bold not-italic text-[#d6362f]">2. Bấm link bỏ giỏ hoặc mua ngay ✅</p>
+          <p className="text-[13px] font-bold not-italic text-[#d6362f]">3. Thao tác chậm lại để Shopee ghi nhận đơn ✅</p>
+          <p className="text-[13px] font-bold not-italic text-[#d6362f]">4. Không xem live trước hoặc sau khi bấm link ✅</p>
+          <p className="text-[13px] font-bold not-italic text-[#d6362f]">
+            5. Không bấm vào link mã giảm giá của người khác sau khi bấm link ✅
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Băng chạy vui mắt "Tạo Link → Mua Ngay → Đặt Hàng → Hoàn Tiền" hiển thị
+// trước khi tạo link, tự ẩn đi ngay khi tạo link thành công.
+function CtaMarquee() {
+  const phrase = (
+    <span className="cta-marquee-phrase">
+      <span>🔗 Tạo Link</span>
+      <span className="cta-arrow">➜</span>
+      <span>🛍️ Mua Ngay</span>
+      <span className="cta-arrow">➜</span>
+      <span>📦 Đặt Hàng</span>
+      <span className="cta-arrow">➜</span>
+      <span className="cta-highlight">Hoàn Tiền</span>
+    </span>
+  );
+  return (
+    <div className="cta-marquee-frame">
+      <div className="cta-marquee-frame-inner">
+        <div className="cta-marquee-track">
+          {phrase}
+          {phrase}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HeartIcon({ className = "", filled = false }) {
   return (
     <svg
@@ -312,6 +374,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
   // Trạng thái mở/đóng khối "5 lưu ý" ở mỗi sản phẩm vừa tạo link (theo id).
   const [expandedNotes, setExpandedNotes] = useState({});
+  // Trạng thái mở/đóng khối "Lưu ý quan trọng để được hoàn tiền" hiển thị trước khi tạo link.
+  const [mainNoticeOpen, setMainNoticeOpen] = useState(false);
 
   // Đơn hàng: tìm kiếm theo mã đơn / tên sản phẩm + lọc theo trạng thái + phân trang.
   const [orderSearch, setOrderSearch] = useState("");
@@ -526,6 +590,10 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     () => multiUrlsText.split("\n").map((s) => s.trim()).filter(Boolean).length,
     [multiUrlsText]
   );
+
+  // Chỉ hiện nút "Xóa" khi khách đã điền chữ vào ô nhập link (đơn hoặc nhiều dòng).
+  const hasInput =
+    createMode === "single" ? shopeeUrl.trim().length > 0 : multiUrlsText.trim().length > 0;
 
   // Gọi API chuyển 1 link — không throw, luôn trả về trạng thái để Promise.all không bị chặn bởi 1 link lỗi.
   async function convertOneLink(url) {
@@ -762,37 +830,41 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </div>
             </div>
           ) : activeTab === "link" ? (
-            <div className="vip-name-frame inline-block">
-              <div className="vip-name-frame-inner">
-                {editingName ? (
-                  <input
-                    autoFocus
-                    type="text"
-                    value={nameInput}
-                    maxLength={30}
-                    onChange={(e) => setNameInput(e.target.value)}
-                    onBlur={commitNameEdit}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") commitNameEdit();
-                      if (e.key === "Escape") cancelNameEdit();
-                    }}
-                    className="vip-name-input text-xl sm:text-2xl px-1 py-0.5 w-36 sm:w-52"
-                  />
-                ) : (
-                  <h1 className="vip-name-text text-2xl sm:text-3xl tracking-tight">
-                    {headerTitle}
-                  </h1>
-                )}
+            <div className="flex items-center gap-2.5">
+              <div className="vip-name-frame inline-block">
+                <div className="vip-name-frame-inner">
+                  {editingName ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      value={nameInput}
+                      maxLength={30}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      onBlur={commitNameEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitNameEdit();
+                        if (e.key === "Escape") cancelNameEdit();
+                      }}
+                      className="vip-name-input text-xl sm:text-2xl px-1 py-0.5 w-36 sm:w-52"
+                    />
+                  ) : (
+                    <h1 className="vip-name-text text-2xl sm:text-3xl tracking-tight">
+                      {headerTitle}
+                    </h1>
+                  )}
+                </div>
+              </div>
+              {!editingName && (
                 <button
                   type="button"
                   onClick={startEditingName}
                   aria-label="Chỉnh sửa tên"
                   title="Chỉnh sửa tên"
-                  className="vip-edit-btn cursor-pointer shrink-0"
+                  className="vip-edit-btn-outside cursor-pointer shrink-0"
                 >
-                  <PencilIcon className="w-3.5 h-3.5" />
+                  <PencilIcon className="w-4 h-4" />
                 </button>
-              </div>
+              )}
             </div>
           ) : (
             <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
@@ -830,126 +902,140 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </div>
             </div>
 
-            {/* Chọn chế độ: tạo 1 link hoặc nhiều link cùng lúc (tối đa 10 link) */}
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <button
-                type="button"
-                onClick={() => handleCreateModeChange("single")}
-                className={`px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold border-2 transition-all cursor-pointer ${
-                  createMode === "single"
-                    ? "bg-[#ffe8d1] border-[#ffc98a] text-[#b56a12] shadow-sm scale-[1.03]"
-                    : "bg-[#fff6ec] border-[#ffe3c2] text-[#c98a3f] hover:brightness-95"
-                }`}
-              >
-                🎀 Tạo 1 link
-              </button>
-              <button
-                type="button"
-                onClick={() => handleCreateModeChange("multi")}
-                className={`px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold border-2 transition-all cursor-pointer ${
-                  createMode === "multi"
-                    ? "bg-[#ff8383] border-[#e94f4f] text-white shadow-sm scale-[1.03]"
-                    : "bg-[#ffe4e4] border-[#ffc4c4] text-[#c34848] hover:brightness-95"
-                }`}
-              >
-                🎀 Tạo nhiều link
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateLinks} className="space-y-3">
-              {createMode === "single" ? (
-                <div className="relative">
-                  <input
-                    type="url"
-                    required
-                    value={shopeeUrl}
-                    onChange={(e) => setShopeeUrl(e.target.value)}
-                    placeholder="https://shopee.vn/..."
-                    className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-11 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60"
-                  />
-                  <button
-                    type="button"
-                    onClick={handlePasteUrl}
-                    aria-label="Dán link từ clipboard"
-                    title="Dán link"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 rounded-md bg-panel-2 text-gold hover:brightness-95 active:scale-90 transition-all cursor-pointer"
-                  >
-                    <PasteIcon className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  <div className="relative">
-                    <textarea
-                      required
-                      rows={3}
-                      value={multiUrlsText}
-                      onChange={(e) => setMultiUrlsText(e.target.value)}
-                      onPaste={handleMultiPaste}
-                      placeholder={`https://shopee.vn/...\nhttps://shopee.vn/...\n(mỗi link 1 dòng, tối đa ${MAX_MULTI_LINKS} link)`}
-                      className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-11 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60 resize-y"
-                    />
-                    <button
-                      type="button"
-                      onClick={handlePasteMultiUrl}
-                      aria-label="Dán link từ clipboard"
-                      title="Dán link"
-                      className="absolute right-2 top-2.5 inline-flex items-center justify-center w-8 h-8 rounded-md bg-panel-2 text-gold hover:brightness-95 active:scale-90 transition-all cursor-pointer"
-                    >
-                      <PasteIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <p className={`text-xs mt-1.5 ${multiUrlsCount > MAX_MULTI_LINKS ? "text-danger font-semibold" : "text-muted"}`}>
-                    {multiUrlsCount}/{MAX_MULTI_LINKS} link
-                    {multiUrlsCount > MAX_MULTI_LINKS ? " — chỉ 10 link đầu tiên được tạo" : ""}
-                  </p>
-                </div>
-              )}
-              <div className="flex items-center gap-2">
+            {/* Khung gộp: từ nút chọn chế độ đến dòng lưu ý quan trọng — đóng thành 1 khối */}
+            <div className="rounded-2xl border-2 border-border/70 p-4 sm:p-5">
+              {/* Chọn chế độ: tạo 1 link hoặc nhiều link cùng lúc (tối đa 10 link) */}
+              <div className="flex items-center justify-between gap-3 mb-4">
                 <button
-                  type="submit"
-                  disabled={converting}
-                  className={`flex-1 sm:flex-none sm:w-auto bg-[#8b5fbf] hover:bg-[#9d72d1] text-white font-bold rounded-lg px-5 py-2.5 text-sm shadow-md shadow-[#8b5fbf]/40 transition-all disabled:opacity-60 disabled:animate-none cursor-pointer ${
-                    batchResults.length === 0 ? "animate-pulse" : "opacity-30"
+                  type="button"
+                  onClick={() => handleCreateModeChange("single")}
+                  className={`px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold border-2 transition-all cursor-pointer ${
+                    createMode === "single"
+                      ? "bg-[#ffe8d1] border-[#ffc98a] text-[#b56a12] shadow-sm scale-[1.03]"
+                      : "bg-[#fff6ec] border-[#ffe3c2] text-[#c98a3f] hover:brightness-95"
                   }`}
                 >
-                  {converting
-                    ? "Đang tạo..."
-                    : createMode === "multi" && multiUrlsCount > 1
-                    ? `Tạo ${Math.min(multiUrlsCount, MAX_MULTI_LINKS)} link hoàn tiền`
-                    : "Tạo link hoàn tiền"}
+                  🎀 Tạo 1 link
                 </button>
                 <button
                   type="button"
-                  onClick={handleClearUrl}
-                  aria-label="Xóa link"
-                  title="Xóa"
-                  className="inline-flex items-center justify-center gap-1.5 bg-[#eceef1] hover:bg-[#dfe2e6] text-[#5b616b] font-semibold rounded-lg px-3.5 py-2.5 text-sm transition-colors cursor-pointer shrink-0"
+                  onClick={() => handleCreateModeChange("multi")}
+                  className={`px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold border-2 transition-all cursor-pointer ${
+                    createMode === "multi"
+                      ? "bg-[#ff8383] border-[#e94f4f] text-white shadow-sm scale-[1.03]"
+                      : "bg-[#ffe4e4] border-[#ffc4c4] text-[#c34848] hover:brightness-95"
+                  }`}
                 >
-                  <CloseIcon className="w-3.5 h-3.5" />
-                  Xóa
+                  🎀 Tạo nhiều link
                 </button>
               </div>
 
-              {batchSuccessCount > 0 && (
-                <div className="flex justify-center pt-2.5 mt-3 border-t border-border/40">
-                  <div className="success-glow-green inline-flex items-center gap-2 rounded-lg border border-[#22c55e]/40 px-3.5 py-2">
-                    <CheckIcon className="w-4 h-4 text-[#16a34a] shrink-0" />
-                    <p className="text-sm font-bold text-[#16a34a] whitespace-nowrap">
-                      {batchTotalCount <= 1
-                        ? "Đã tạo link hoàn tiền thành công"
-                        : `Đã tạo ${batchSuccessCount}/${batchTotalCount} link hoàn tiền thành công`}
+              <form onSubmit={handleCreateLinks} className="space-y-3">
+                {createMode === "single" ? (
+                  <div className="relative">
+                    <input
+                      type="url"
+                      required
+                      value={shopeeUrl}
+                      onChange={(e) => setShopeeUrl(e.target.value)}
+                      placeholder="Dán link sản phẩm vào đây!"
+                      className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-20 sm:pr-24 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60"
+                    />
+                    <button
+                      type="button"
+                      onClick={handlePasteUrl}
+                      aria-label="Dán link từ clipboard"
+                      title="Dán link"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 px-2.5 h-8 rounded-md bg-panel-2 text-gold hover:brightness-95 active:scale-90 transition-all cursor-pointer text-xs font-semibold"
+                    >
+                      <PasteIcon className="w-4 h-4" />
+                      Dán
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="relative">
+                      <textarea
+                        required
+                        rows={3}
+                        value={multiUrlsText}
+                        onChange={(e) => setMultiUrlsText(e.target.value)}
+                        onPaste={handleMultiPaste}
+                        placeholder={`Dán link sản phẩm vào đây!\nhttps://shopee.vn/...\n(mỗi link 1 dòng, tối đa ${MAX_MULTI_LINKS} link)`}
+                        className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-20 sm:pr-24 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60 resize-y"
+                      />
+                      <button
+                        type="button"
+                        onClick={handlePasteMultiUrl}
+                        aria-label="Dán link từ clipboard"
+                        title="Dán link"
+                        className="absolute right-2 top-2.5 inline-flex items-center gap-1 px-2.5 h-8 rounded-md bg-panel-2 text-gold hover:brightness-95 active:scale-90 transition-all cursor-pointer text-xs font-semibold"
+                      >
+                        <PasteIcon className="w-4 h-4" />
+                        Dán
+                      </button>
+                    </div>
+                    <p className={`text-xs mt-1.5 ${multiUrlsCount > MAX_MULTI_LINKS ? "text-danger font-semibold" : "text-muted"}`}>
+                      {multiUrlsCount}/{MAX_MULTI_LINKS} link
+                      {multiUrlsCount > MAX_MULTI_LINKS ? " — chỉ 10 link đầu tiên được tạo" : ""}
                     </p>
                   </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="submit"
+                    disabled={converting}
+                    className={`flex-1 sm:flex-none sm:w-auto bg-[#8b5fbf] hover:bg-[#9d72d1] text-white font-bold rounded-lg px-5 py-2.5 text-sm shadow-md shadow-[#8b5fbf]/40 transition-all disabled:opacity-60 disabled:animate-none cursor-pointer ${
+                      batchResults.length === 0 ? "animate-pulse" : "opacity-30"
+                    }`}
+                  >
+                    {converting
+                      ? "Đang tạo..."
+                      : createMode === "multi" && multiUrlsCount > 1
+                      ? `Tạo ${Math.min(multiUrlsCount, MAX_MULTI_LINKS)} link hoàn tiền`
+                      : "Tạo link hoàn tiền"}
+                  </button>
+                  {hasInput && (
+                    <button
+                      type="button"
+                      onClick={handleClearUrl}
+                      aria-label="Xóa link"
+                      title="Xóa"
+                      className="inline-flex items-center justify-center gap-1.5 bg-[#eceef1] hover:bg-[#dfe2e6] text-[#5b616b] font-semibold rounded-lg px-3.5 py-2.5 text-sm transition-colors cursor-pointer shrink-0"
+                    >
+                      <CloseIcon className="w-3.5 h-3.5" />
+                      Xóa
+                    </button>
+                  )}
+                </div>
+
+                {batchSuccessCount > 0 && (
+                  <div className="flex justify-center pt-2.5 mt-3 border-t border-border/40">
+                    <div className="success-glow-green inline-flex items-center gap-2 rounded-lg border border-[#22c55e]/40 px-3.5 py-2">
+                      <CheckIcon className="w-4 h-4 text-[#16a34a] shrink-0" />
+                      <p className="text-sm font-bold text-[#16a34a] whitespace-nowrap">
+                        {batchTotalCount <= 1
+                          ? "Đã tạo link hoàn tiền thành công"
+                          : `Đã tạo ${batchSuccessCount}/${batchTotalCount} link hoàn tiền thành công`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </form>
+
+              {convertError && (
+                <p className="text-sm text-danger bg-danger/10 border border-danger/30 rounded-lg px-3 py-2 mt-4">
+                  {convertError}
+                </p>
+              )}
+
+              {batchSuccessCount === 0 && (
+                <div className="mt-4 space-y-3">
+                  <ImportantNotice expanded={mainNoticeOpen} onToggle={() => setMainNoticeOpen((v) => !v)} />
+                  <CtaMarquee />
                 </div>
               )}
-            </form>
-
-            {convertError && (
-              <p className="text-sm text-danger bg-danger/10 border border-danger/30 rounded-lg px-3 py-2 mt-4">
-                {convertError}
-              </p>
-            )}
+            </div>
 
             {batchResults.length > 0 && (
               <div className="mt-5 space-y-3">
@@ -986,32 +1072,10 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                       </button>
 
                       <div className="mb-3">
-                        <button
-                          type="button"
-                          onClick={() => toggleNotice(item.id)}
-                          aria-expanded={!!expandedNotes[item.id]}
-                          className="notice-pill inline-flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <span className="text-[12.5px] font-bold not-italic text-[#d6362f]">
-                            ⚠️ Lưu ý để được ghi nhận đơn này
-                          </span>
-                          <ChevronDownIcon
-                            className={`w-3.5 h-3.5 text-[#d6362f] shrink-0 transition-transform ${
-                              expandedNotes[item.id] ? "rotate-180" : ""
-                            }`}
-                          />
-                        </button>
-                        {expandedNotes[item.id] && (
-                          <div className="mt-2 space-y-1">
-                            <p className="text-[13px] font-bold not-italic text-[#d6362f]">1. Xóa sản phẩm này khỏi giỏ hàng (nếu có) ✅</p>
-                            <p className="text-[13px] font-bold not-italic text-[#d6362f]">2. Bấm link bỏ giỏ hoặc mua ngay ✅</p>
-                            <p className="text-[13px] font-bold not-italic text-[#d6362f]">3. Thao tác chậm lại để Shopee ghi nhận đơn ✅</p>
-                            <p className="text-[13px] font-bold not-italic text-[#d6362f]">4. Không xem live trước hoặc sau khi bấm link ✅</p>
-                            <p className="text-[13px] font-bold not-italic text-[#d6362f]">
-                              5. Không bấm vào link mã giảm giá của người khác sau khi bấm link ✅
-                            </p>
-                          </div>
-                        )}
+                        <ImportantNotice
+                          expanded={!!expandedNotes[item.id]}
+                          onToggle={() => toggleNotice(item.id)}
+                        />
                       </div>
 
                       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border/60 pr-10">
