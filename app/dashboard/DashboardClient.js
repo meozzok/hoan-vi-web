@@ -1088,7 +1088,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             )}
 
             {batchResults.length > 0 && (
-              <div className="mt-5 space-y-3">
+              <div className={batchResults.length > 1 ? "mt-5 product-list-frame" : "mt-5"}>
+                <div className="space-y-3">
                 {batchResults.map((r, idx) => {
                   if (r.status === "error") {
                     return (
@@ -1109,7 +1110,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   return (
                     <div
                       key={r.key}
-                      className="relative bg-surface border border-border rounded-lg p-4"
+                      className="product-card relative p-4"
                     >
                       {/* Dòng "Lưu ý quan trọng để được hoàn tiền" nằm riêng 1
                           hàng, tách biệt khỏi tên sản phẩm/nút yêu thích. */}
@@ -1163,7 +1164,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                           </div>
                           <p className="text-xs mt-0.5">
                             <span className="text-danger">Hoa hồng ước tính:</span>{" "}
-                            <span className="font-bold font-mono-num" style={{ color: ESTIMATE_GREEN }}>
+                            <span className="money-chip font-bold font-mono-num" style={{ color: ESTIMATE_GREEN }}>
                               {item.commissionStr}
                             </span>
                           </p>
@@ -1189,6 +1190,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     </div>
                   );
                 })}
+                </div>
               </div>
             )}
           </div>
@@ -1295,7 +1297,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             </p>
                             <p className="text-xs mt-0.5">
                               <span className="text-danger">Hoa hồng ước tính:</span>{" "}
-                              <span className="font-bold font-mono-num" style={{ color: ESTIMATE_GREEN }}>
+                              <span className="money-chip font-bold font-mono-num" style={{ color: ESTIMATE_GREEN }}>
                                 {item.commissionStr}
                               </span>
                             </p>
@@ -1366,8 +1368,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                                 </span>
                               </div>
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: ESTIMATE_GREEN }}>
-                              {item.commissionStr}
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold">
+                              <span className="money-chip" style={{ color: ESTIMATE_GREEN }}>{item.commissionStr}</span>
                             </td>
                             <td className="px-4 py-3.5">
                               <div className="flex items-center justify-center gap-2">
@@ -1603,21 +1605,21 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             style={{ border: `1px solid ${AMOUNT_COLORS.gross.border}`, background: AMOUNT_COLORS.gross.soft }}
                           >
                             <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Hoa hồng</p>
-                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.gross.solid }}>{formatVnd(gross)}</p>
+                            <p className="mt-0.5"><span className="money-chip font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.gross.solid }}>{formatVnd(gross)}</span></p>
                           </div>
                           <div
                             className="text-center rounded-lg py-1.5"
                             style={{ border: `1px solid ${AMOUNT_COLORS.afterTax.border}`, background: AMOUNT_COLORS.afterTax.soft }}
                           >
                             <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Sau thuế</p>
-                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax.solid }}>{formatVnd(afterTax)}</p>
+                            <p className="mt-0.5"><span className="money-chip font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax.solid }}>{formatVnd(afterTax)}</span></p>
                           </div>
                           <div
                             className="text-center rounded-lg py-1.5"
                             style={{ border: `1px solid ${AMOUNT_COLORS.final80.border}`, background: AMOUNT_COLORS.final80.soft }}
                           >
                             <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Hoa hồng thực nhận</p>
-                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80.solid }}>{formatVnd(final80)}</p>
+                            <p className="mt-0.5"><span className="money-chip font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80.solid }}>{formatVnd(final80)}</span></p>
                           </div>
                         </div>
                       </div>
@@ -1659,14 +1661,14 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                                 {orderNumber}.🛍️ {truncateChars(order.productName, 60)}
                               </span>
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.gross.solid }}>
-                              {formatVnd(gross)}
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold">
+                              <span className="money-chip" style={{ color: AMOUNT_COLORS.gross.solid }}>{formatVnd(gross)}</span>
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.afterTax.solid }}>
-                              {formatVnd(afterTax)}
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold">
+                              <span className="money-chip" style={{ color: AMOUNT_COLORS.afterTax.solid }}>{formatVnd(afterTax)}</span>
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.final80.solid }}>
-                              {formatVnd(final80)}
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold">
+                              <span className="money-chip" style={{ color: AMOUNT_COLORS.final80.solid }}>{formatVnd(final80)}</span>
                             </td>
                             <td className="px-4 py-3.5">
                               <span
@@ -1746,8 +1748,10 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
           <div className="ticket-notch bg-panel border border-border rounded-2xl overflow-hidden max-w-md">
             <div className="p-6 sm:p-7">
               <p className="text-xs text-muted uppercase tracking-widest mb-2">Có sẵn để rút</p>
-              <p className="font-display font-bold text-4xl text-[#16c261] tabular-nums">
-                {wallet ? formatVnd(wallet.coTheRutHien) : "—"}
+              <p className="font-display font-bold text-4xl tabular-nums">
+                <span className="money-chip px-3 py-0.5 text-[#16c261]">
+                  {wallet ? formatVnd(wallet.coTheRutHien) : "—"}
+                </span>
               </p>
 
               {wallet && (
@@ -1823,31 +1827,39 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 <div className="p-6 sm:p-7 grid grid-cols-2 gap-4">
                   <div className="border border-border rounded-xl px-3.5 py-3">
                     <p className="text-xs text-muted mb-1">🟡 Tổng hoa hồng</p>
-                    <p className="font-mono-num text-lg font-bold text-[#eab308]">
-                      {formatVnd(
-                        commissionBreakdown(wallet.dangCho).final80 +
-                          wallet.hoanThanhChuaRut +
-                          wallet.coTheRutHien +
-                          wallet.daNhan
-                      )}
+                    <p className="font-mono-num text-lg font-bold">
+                      <span className="money-chip text-[#eab308]">
+                        {formatVnd(
+                          commissionBreakdown(wallet.dangCho).final80 +
+                            wallet.hoanThanhChuaRut +
+                            wallet.coTheRutHien +
+                            wallet.daNhan
+                        )}
+                      </span>
                     </p>
                   </div>
                   <div className="border border-border rounded-xl px-3.5 py-3">
                     <p className="text-xs text-muted mb-1">🟣 Đang chờ xử lý</p>
-                    <p className="font-mono-num text-lg font-bold text-[#a855f7]">
-                      {formatVnd(commissionBreakdown(wallet.dangCho).final80)}
+                    <p className="font-mono-num text-lg font-bold">
+                      <span className="money-chip text-[#a855f7]">
+                        {formatVnd(commissionBreakdown(wallet.dangCho).final80)}
+                      </span>
                     </p>
                   </div>
                   <div className="border border-border rounded-xl px-3.5 py-3">
                     <p className="text-xs text-muted mb-1">🟢 Đã hoàn thành</p>
-                    <p className="font-mono-num text-lg font-bold text-[#16c261]">
-                      {formatVnd(wallet.coTheRutHien)}
+                    <p className="font-mono-num text-lg font-bold">
+                      <span className="money-chip text-[#16c261]">
+                        {formatVnd(wallet.coTheRutHien)}
+                      </span>
                     </p>
                   </div>
                   <div className="border border-border rounded-xl px-3.5 py-3">
                     <p className="text-xs text-muted mb-1">🔴 Đã nhận</p>
-                    <p className="font-mono-num text-lg font-bold text-[#ef4444]">
-                      {formatVnd(wallet.daNhan)}
+                    <p className="font-mono-num text-lg font-bold">
+                      <span className="money-chip text-[#ef4444]">
+                        {formatVnd(wallet.daNhan)}
+                      </span>
                     </p>
                   </div>
                 </div>

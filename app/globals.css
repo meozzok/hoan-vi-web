@@ -34,18 +34,18 @@
 }
 
 html {
-  background: #fff2f6;
+  background: #f6f0ff;
   overscroll-behavior-y: none;
 }
 
 body {
-  background: #fff2f6;
+  background: #f6f0ff;
   color: var(--cream);
   overscroll-behavior-y: none;
   background-image:
-    radial-gradient(ellipse 900px 520px at 100% -8%, rgba(255, 214, 232, 0.55), transparent 60%),
-    radial-gradient(ellipse 700px 460px at -5% 105%, rgba(255, 179, 209, 0.4), transparent 55%),
-    linear-gradient(160deg, #fff6f9 0%, #ffe4ee 45%, #ffc9dd 100%);
+    radial-gradient(ellipse 900px 520px at 100% -8%, rgba(216, 180, 254, 0.55), transparent 60%),
+    radial-gradient(ellipse 700px 460px at -5% 105%, rgba(196, 148, 245, 0.4), transparent 55%),
+    linear-gradient(160deg, #faf6ff 0%, #e6d5fd 45%, #c9a3f5 100%);
   background-attachment: fixed;
 }
 
@@ -124,15 +124,15 @@ body {
   --danger: #d94f70;
   --highlight: #6634a8;
 
-  /* Bảng nền hồng phấn dịu mắt, lấy theo tông màu trời hồng pastel (mây +
-     hoa tulip) từ ảnh mẫu khách gửi — sáng, nhẹ nhàng, thay cho tím trước đó. */
-  --bg-grad-1: #fff6f9;
-  --bg-grad-2: #ffe4ee;
-  --bg-grad-3: #ffc9dd;
+  /* Bảng nền tím nhạt sáng tươi — dùng chung cho cả trang đăng nhập lẫn
+     dashboard, tươi sáng và dịu mắt. */
+  --bg-grad-1: #faf6ff;
+  --bg-grad-2: #e6d5fd;
+  --bg-grad-3: #c9a3f5;
 
   background-image:
-    radial-gradient(ellipse 900px 520px at 100% -8%, rgba(255, 214, 232, 0.55), transparent 60%),
-    radial-gradient(ellipse 700px 460px at -5% 105%, rgba(255, 179, 209, 0.4), transparent 55%),
+    radial-gradient(ellipse 900px 520px at 100% -8%, rgba(216, 180, 254, 0.55), transparent 60%),
+    radial-gradient(ellipse 700px 460px at -5% 105%, rgba(196, 148, 245, 0.4), transparent 55%),
     linear-gradient(160deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 45%, var(--bg-grad-3) 100%);
   background-attachment: fixed;
   color: var(--cream);
@@ -234,19 +234,19 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Khung tên khách hàng (vd "Hello Bích") — nền cam tươi rực rỡ,
-   chữ hồng nổi bật, tĩnh (không nhấp nháy/chạy sáng).
+   Khung tên khách hàng (vd "Hello Bích") — viền cam tươi, nền
+   trắng sáng, chữ hồng nổi bật, tĩnh (không nhấp nháy/chạy sáng).
    ───────────────────────────────────────────────────────────── */
 .vip-name-frame {
   position: relative;
   padding: 2px;
   border-radius: 18px;
   background: linear-gradient(135deg, #ffb066 0%, #ff7a1a 50%, #ffb066 100%);
-  box-shadow: 0 8px 20px rgba(255, 122, 26, 0.32);
+  box-shadow: 0 8px 20px rgba(255, 122, 26, 0.28);
 }
 .vip-name-frame-inner {
   border-radius: 16px;
-  background: linear-gradient(135deg, #ff9d3f 0%, #ff8619 55%, #ff7a1a 100%);
+  background: #ffffff;
   height: 100%;
   width: 100%;
   padding: 0.7rem 1.35rem;
@@ -267,7 +267,7 @@ body {
   font-weight: 700;
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(255, 47, 143, 0.55);
+  border-bottom: 1px solid rgba(255, 47, 143, 0.4);
   color: #ff2f8f;
   outline: none;
 }
@@ -292,7 +292,35 @@ body {
   transform: scale(1.06);
 }
 
-/* Dòng cảnh báo "⚠️ Lưu ý quan trọng để được hoàn tiền" — nền vàng nhạt sáng,
+/* Khung 1 sản phẩm đã tạo link — viền bo tròn mềm mại, có đổ bóng nhẹ và
+   viền màu tím nhạt thay vì viền xám đơn điệu, đẹp mắt hơn. */
+.product-card {
+  border-radius: 18px;
+  border: 1.5px solid #e3cdf4;
+  background: var(--surface);
+  box-shadow: 0 4px 16px rgba(139, 95, 191, 0.10);
+}
+
+/* Khung chung bao ngoài danh sách nhiều sản phẩm khi tạo nhiều link cùng
+   lúc — tách biệt trực quan với khối bên trên. */
+.product-list-frame {
+  border-radius: 20px;
+  border: 1.5px solid #f3c6de;
+  background: linear-gradient(180deg, #fff0f7, #fff8fb);
+  padding: 14px;
+}
+
+/* Khung nhỏ màu xanh nhạt bọc quanh mọi số tiền/hoa hồng hiển thị trong
+   app (hoa hồng ước tính, hoa hồng, sau thuế, số dư ví...) — đồng bộ 1
+   kiểu nhấn mạnh số tiền ở mọi nơi. */
+.money-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #e3f3ff;
+  border: 1px solid #bfe3fb;
+  border-radius: 8px;
+  padding: 1px 8px;
+}
    không viền. Tiêu đề + 5 gạch đầu dòng nằm chung 1 khối (không tách ô). */
 .notice-box {
   background: #fff4b8;
