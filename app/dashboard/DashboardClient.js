@@ -164,14 +164,16 @@ function ImportantNotice({ expanded, onToggle }) {
         aria-expanded={expanded}
         className="notice-box-header cursor-pointer"
       >
-        <span className="text-[12.5px] sm:text-sm font-bold not-italic text-[#d6362f]">
-          ⚠️ Lưu ý quan trọng để được hoàn tiền
+        <span className="inline-flex items-center gap-1.5">
+          <span className="text-[12.5px] sm:text-sm font-bold not-italic text-[#d6362f]">
+            ⚠️ Lưu ý quan trọng để được hoàn tiền
+          </span>
+          <ChevronDownIcon
+            className={`w-3.5 h-3.5 text-[#d6362f] shrink-0 transition-transform ${
+              expanded ? "rotate-180" : ""
+            }`}
+          />
         </span>
-        <ChevronDownIcon
-          className={`w-3.5 h-3.5 text-[#d6362f] shrink-0 transition-transform ${
-            expanded ? "rotate-180" : ""
-          }`}
-        />
       </button>
       {expanded && (
         <div className="notice-box-body">
@@ -1084,15 +1086,6 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </div>
             )}
 
-            {/* Khung riêng: step-tracker "Dán Link → Mua Ngay → Đặt Hàng →
-                Hoàn Tiền" — không dùng chung khung với "Tạo 1 link / Tạo
-                nhiều link" ở trên, tự ẩn khi đã tạo link thành công. */}
-            {batchSuccessCount === 0 && (
-              <div className="mt-4">
-                <CtaStepTracker />
-              </div>
-            )}
-
             {batchResults.length > 0 && (
               <div className="mt-5 space-y-3">
                 {batchResults.map((r, idx) => {
@@ -1118,27 +1111,15 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                       className="relative bg-surface border border-border rounded-lg p-4"
                     >
                       {/* Dòng "Lưu ý quan trọng để được hoàn tiền" nằm riêng 1
-                          hàng, phía trên nút yêu thích — không chung dòng. */}
-                      <div className="mb-2">
+                          hàng, tách biệt khỏi tên sản phẩm/nút yêu thích. */}
+                      <div className="mb-3">
                         <ImportantNotice
                           expanded={!!expandedNotes[item.id]}
                           onToggle={() => toggleNotice(item.id)}
                         />
                       </div>
 
-                      <div className="flex justify-end mb-3">
-                        <button
-                          type="button"
-                          onClick={() => toggleFavoriteLink(item.id)}
-                          aria-label={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
-                          title={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-panel border border-border text-[#ef4444] hover:brightness-95 active:scale-90 transition-all cursor-pointer"
-                        >
-                          <HeartIcon className="w-4 h-4" filled={item.favorite} />
-                        </button>
-                      </div>
-
-                      <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border/60">
+                      <div className="flex items-start gap-3 mb-4 pb-4 border-b border-border/60">
                         {item.image ? (
                           <img
                             src={item.image}
@@ -1153,17 +1134,32 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             Không ảnh
                           </div>
                         )}
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           {batchResults.length > 1 && (
                             <p className="text-[11px] text-muted font-mono-num mb-0.5">
                               #{idx + 1}
                             </p>
                           )}
-                          {item.productName && (
-                            <p className="text-base font-bold">
-                              {truncateChars(item.productName, 60)}
-                            </p>
-                          )}
+                          {/* Tên sản phẩm + nút yêu thích cùng 1 hàng; tên dài
+                              sẽ tự xuống dòng, không đè lên icon yêu thích. */}
+                          <div className="flex items-start justify-between gap-2">
+                            {item.productName ? (
+                              <p className="text-base font-bold break-words min-w-0">
+                                {truncateChars(item.productName, 60)}
+                              </p>
+                            ) : (
+                              <span />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => toggleFavoriteLink(item.id)}
+                              aria-label={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                              title={item.favorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-panel border border-border text-[#ef4444] hover:brightness-95 active:scale-90 transition-all cursor-pointer shrink-0"
+                            >
+                              <HeartIcon className="w-4 h-4" filled={item.favorite} />
+                            </button>
+                          </div>
                           <p className="text-xs mt-0.5">
                             <span className="text-danger">Hoa hồng ước tính:</span>{" "}
                             <span className="font-bold font-mono-num" style={{ color: ESTIMATE_GREEN }}>
@@ -1194,6 +1190,15 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Khung riêng hoàn toàn: step-tracker "Dán Link → Mua Ngay → Đặt
+            Hàng → Hoàn Tiền" — không dùng chung khung với ô "Tiền kiếm khó
+            lắm..." / khung tạo link ở trên, tự ẩn khi đã tạo link thành công. */}
+        {activeTab === "link" && batchSuccessCount === 0 && (
+          <div className="mb-8">
+            <CtaStepTracker />
           </div>
         )}
 
