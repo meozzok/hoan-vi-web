@@ -232,3 +232,75 @@ body {
   0%, 100% { background-color: rgba(34, 197, 94, 0.10); box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
   50% { background-color: rgba(34, 197, 94, 0.22); box-shadow: 0 0 12px rgba(34, 197, 94, 0.25); }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Khung tên khách hàng (vd "Hello Bích") — phong cách sang trọng,
+   thanh lịch: viền kim tuyến vàng-tím ánh kim, nền gradient tím
+   đậm, chữ nghiêng kiểu serif dát vàng. Thay cho khung phẳng cũ.
+   ───────────────────────────────────────────────────────────── */
+.vip-name-frame {
+  position: relative;
+  padding: 2px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #e9c98a 0%, #8b5fbf 45%, #3d2261 100%);
+  box-shadow: 0 8px 22px rgba(46, 28, 71, 0.28);
+}
+.vip-name-frame-inner {
+  border-radius: 16px;
+  background: linear-gradient(135deg, #2e1c47 0%, #4a2d73 60%, #3d2261 100%);
+  height: 100%;
+  width: 100%;
+  padding: 0.7rem 1.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.vip-name-text {
+  font-family: var(--font-elegant), serif;
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: linear-gradient(90deg, #e9c98a, #fff7e6 45%, #e9c98a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.vip-edit-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #f0dcae;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  border: 1px solid rgba(240, 220, 174, 0.25);
+}
+.vip-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+.vip-name-input {
+  font-family: var(--font-elegant), serif;
+  font-style: italic;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(240, 220, 174, 0.55);
+  color: #fff7e6;
+  outline: none;
+}
+.vip-name-input:focus {
+  border-bottom-color: #e9c98a;
+}
+
+/* Dòng cảnh báo "⚠️ Lưu ý để được ghi nhận đơn này" — nền vàng nhạt sáng,
+   không viền, ôm vừa nội dung (thon gọn), dùng làm nút mở/đóng 5 lưu ý. */
+.notice-pill {
+  background: #fff4b8;
+  border: none;
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+.notice-pill:hover {
+  background: #ffee9e;
+}

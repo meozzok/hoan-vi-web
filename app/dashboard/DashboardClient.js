@@ -135,6 +135,23 @@ function CopyIcon({ className = "" }) {
   );
 }
 
+function PencilIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 function HeartIcon({ className = "", filled = false }) {
   return (
     <svg
@@ -251,6 +268,15 @@ function loadLocalNickname(myId) {
   }
 }
 
+function saveLocalNickname(myId, name) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(localNicknameStorageKey(myId), name);
+  } catch {
+    // Bỏ qua nếu localStorage đầy/không khả dụng — không làm hỏng luồng chỉnh tên.
+  }
+}
+
 export default function DashboardClient({ user, initialOrders, initialWallet }) {
   const router = useRouter();
   const [orders] = useState(initialOrders || []);
@@ -281,6 +307,11 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   // Tên gợi nhớ lưu riêng trên từng điện thoại (không đồng bộ qua server) —
   // để 2 người dùng chung 1 My ID trên 2 máy khác nhau không bị ghi đè tên của nhau.
   const [localNickname, setLocalNickname] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+
+  // Trạng thái mở/đóng khối "5 lưu ý" ở mỗi sản phẩm vừa tạo link (theo id).
+  const [expandedNotes, setExpandedNotes] = useState({});
 
   // Đơn hàng: tìm kiếm theo mã đơn / tên sản phẩm + lọc theo trạng thái + phân trang.
   const [orderSearch, setOrderSearch] = useState("");
@@ -665,6 +696,27 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
   const displayName = localNickname || user.displayName || user.myId;
 
+  function startEditingName() {
+    setNameInput(displayName);
+    setEditingName(true);
+  }
+
+  function commitNameEdit() {
+    const trimmed = nameInput.trim();
+    const finalName = trimmed || displayName;
+    setLocalNickname(finalName);
+    saveLocalNickname(user.myId, finalName);
+    setEditingName(false);
+  }
+
+  function cancelNameEdit() {
+    setEditingName(false);
+  }
+
+  function toggleNotice(id) {
+    setExpandedNotes((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
   // Tiêu đề đầu trang đổi theo tab đang xem.
   let headerTitle = `Hello ${displayName}`;
   let headerIsRainbow = false;
@@ -710,10 +762,37 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </div>
             </div>
           ) : activeTab === "link" ? (
-            <div className="soft-frame inline-block px-5 py-3">
-              <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
-                {headerTitle}
-              </h1>
+            <div className="vip-name-frame inline-block">
+              <div className="vip-name-frame-inner">
+                {editingName ? (
+                  <input
+                    autoFocus
+                    type="text"
+                    value={nameInput}
+                    maxLength={30}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    onBlur={commitNameEdit}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitNameEdit();
+                      if (e.key === "Escape") cancelNameEdit();
+                    }}
+                    className="vip-name-input text-xl sm:text-2xl px-1 py-0.5 w-36 sm:w-52"
+                  />
+                ) : (
+                  <h1 className="vip-name-text text-2xl sm:text-3xl tracking-tight">
+                    {headerTitle}
+                  </h1>
+                )}
+                <button
+                  type="button"
+                  onClick={startEditingName}
+                  aria-label="Chỉnh sửa tên"
+                  title="Chỉnh sửa tên"
+                  className="vip-edit-btn cursor-pointer shrink-0"
+                >
+                  <PencilIcon className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           ) : (
             <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
@@ -752,11 +831,11 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             </div>
 
             {/* Chọn chế độ: tạo 1 link hoặc nhiều link cùng lúc (tối đa 10 link) */}
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center justify-between gap-3 mb-4">
               <button
                 type="button"
                 onClick={() => handleCreateModeChange("single")}
-                className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold border-2 transition-all cursor-pointer ${
                   createMode === "single"
                     ? "bg-[#ffe8d1] border-[#ffc98a] text-[#b56a12] shadow-sm scale-[1.03]"
                     : "bg-[#fff6ec] border-[#ffe3c2] text-[#c98a3f] hover:brightness-95"
@@ -767,7 +846,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               <button
                 type="button"
                 onClick={() => handleCreateModeChange("multi")}
-                className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer ${
+                className={`px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold border-2 transition-all cursor-pointer ${
                   createMode === "multi"
                     ? "bg-[#ff8383] border-[#e94f4f] text-white shadow-sm scale-[1.03]"
                     : "bg-[#ffe4e4] border-[#ffc4c4] text-[#c34848] hover:brightness-95"
@@ -803,7 +882,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   <div className="relative">
                     <textarea
                       required
-                      rows={5}
+                      rows={3}
                       value={multiUrlsText}
                       onChange={(e) => setMultiUrlsText(e.target.value)}
                       onPaste={handleMultiPaste}
@@ -853,13 +932,15 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </div>
 
               {batchSuccessCount > 0 && (
-                <div className="success-glow-green flex items-center justify-center gap-2 rounded-lg border border-[#22c55e]/40 px-3 py-2.5">
-                  <CheckIcon className="w-4 h-4 text-[#16a34a] shrink-0" />
-                  <p className="text-sm font-bold text-[#16a34a]">
-                    {batchTotalCount <= 1
-                      ? "Đã tạo link hoàn tiền thành công"
-                      : `Đã tạo ${batchSuccessCount}/${batchTotalCount} link hoàn tiền thành công`}
-                  </p>
+                <div className="flex justify-center pt-2.5 mt-3 border-t border-border/40">
+                  <div className="success-glow-green inline-flex items-center gap-2 rounded-lg border border-[#22c55e]/40 px-3.5 py-2">
+                    <CheckIcon className="w-4 h-4 text-[#16a34a] shrink-0" />
+                    <p className="text-sm font-bold text-[#16a34a] whitespace-nowrap">
+                      {batchTotalCount <= 1
+                        ? "Đã tạo link hoàn tiền thành công"
+                        : `Đã tạo ${batchSuccessCount}/${batchTotalCount} link hoàn tiền thành công`}
+                    </p>
+                  </div>
                 </div>
               )}
             </form>
@@ -904,6 +985,35 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                         <HeartIcon className="w-4 h-4" filled={item.favorite} />
                       </button>
 
+                      <div className="mb-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleNotice(item.id)}
+                          aria-expanded={!!expandedNotes[item.id]}
+                          className="notice-pill inline-flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <span className="text-[12.5px] font-bold not-italic text-[#d6362f]">
+                            ⚠️ Lưu ý để được ghi nhận đơn này
+                          </span>
+                          <ChevronDownIcon
+                            className={`w-3.5 h-3.5 text-[#d6362f] shrink-0 transition-transform ${
+                              expandedNotes[item.id] ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+                        {expandedNotes[item.id] && (
+                          <div className="mt-2 space-y-1">
+                            <p className="text-[13px] font-bold not-italic text-[#d6362f]">1. Xóa sản phẩm này khỏi giỏ hàng (nếu có) ✅</p>
+                            <p className="text-[13px] font-bold not-italic text-[#d6362f]">2. Bấm link bỏ giỏ hoặc mua ngay ✅</p>
+                            <p className="text-[13px] font-bold not-italic text-[#d6362f]">3. Thao tác chậm lại để Shopee ghi nhận đơn ✅</p>
+                            <p className="text-[13px] font-bold not-italic text-[#d6362f]">4. Không xem live trước hoặc sau khi bấm link ✅</p>
+                            <p className="text-[13px] font-bold not-italic text-[#d6362f]">
+                              5. Không bấm vào link mã giảm giá của người khác sau khi bấm link ✅
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border/60 pr-10">
                         {item.image ? (
                           <img
@@ -944,7 +1054,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                           href={item.convertedUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="btn-blink-green flex-1 text-center bg-[#16c261] hover:bg-[#12a852] text-white text-sm font-bold rounded-lg px-3.5 py-3 shadow-md shadow-[#16c261]/40 transition-all active:scale-[0.98] cursor-pointer"
+                          className="btn-blink-green flex-[2] text-center bg-[#16c261] hover:bg-[#12a852] text-white text-sm font-bold rounded-lg px-3.5 py-3 shadow-md shadow-[#16c261]/40 transition-all active:scale-[0.98] cursor-pointer"
                         >
                           🛍️ Mua Ngay
                         </a>
@@ -958,18 +1068,6 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     </div>
                   );
                 })}
-
-                {/* Lưu ý dùng chung cho toàn bộ lô link vừa tạo (chỉ hiện 1 lần dù tạo 1 hay nhiều link) */}
-                <div className="bg-surface/70 border border-border rounded-lg px-4 py-3.5 space-y-1.5">
-                  <p className="text-xs font-semibold text-highlight mb-1">Lưu ý để đơn được ghi nhận:</p>
-                  <p className="text-[14px] italic" style={{ color: "#b28dd9" }}>1. Xóa sản phẩm này khỏi giỏ hàng (nếu có) ✅</p>
-                  <p className="text-[14px] italic" style={{ color: "#b28dd9" }}>2. Bấm link bỏ giỏ hoặc mua ngay ✅</p>
-                  <p className="text-[14px] italic" style={{ color: "#b28dd9" }}>3. Thao tác chậm lại để Shopee ghi nhận đơn ✅</p>
-                  <p className="text-[14px] italic" style={{ color: "#b28dd9" }}>4. Không xem live trước hoặc sau khi bấm link ✅</p>
-                  <p className="text-[14px] italic" style={{ color: "#b28dd9" }}>
-                    5. Không bấm vào link mã giảm giá của người khác sau khi bấm link ✅
-                  </p>
-                </div>
               </div>
             )}
           </div>
