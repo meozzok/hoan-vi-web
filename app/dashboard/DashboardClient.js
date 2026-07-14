@@ -166,7 +166,7 @@ function formatTrackTime(seconds) {
 // là avatar tròn có nút bật/tắt, viền SVG (gradient hồng-đỏ) vẽ theo tiến
 // trình phát và tự xoay ngược chiều với avatar. Bài hát bị khoá nếu khách
 // chưa đủ số đơn hoàn thành theo yêu cầu — không thể bấm phát hay tua.
-function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequestPlay }) {
+function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequestPlay, blurRequirement }) {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0); // 0-100
@@ -222,7 +222,14 @@ function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequest
     >
       <div className="flex flex-col items-center justify-center text-center w-14 shrink-0">
         <span className="text-[10px] text-muted leading-tight">Hoàn thành</span>
-        <span className="font-mono-num text-xs font-bold leading-tight" style={{ color: badgeColor }}>
+        <span
+          className="font-mono-num text-xs font-bold leading-tight"
+          style={{
+            color: badgeColor,
+            filter: blurRequirement ? "blur(4px)" : undefined,
+            userSelect: blurRequirement ? "none" : undefined,
+          }}
+        >
           {doneForBadge}/{required}
         </span>
         <span className="text-[10px] text-muted leading-tight">đơn</span>
@@ -582,7 +589,7 @@ const MUSIC_TRACKS = [
     src: "/music/bai-2.mp3",
     cover: "/music/hoan-tien-avatar.png",
     sourceUrl: "",
-    requiredOrders: 2,
+    requiredOrders: 3,
   },
   {
     id: "bai-3",
@@ -590,7 +597,7 @@ const MUSIC_TRACKS = [
     src: "/music/bai-3.mp3",
     cover: "/music/hoan-tien-avatar.png",
     sourceUrl: "",
-    requiredOrders: 50,
+    requiredOrders: 5,
   },
   {
     id: "bai-4",
@@ -598,7 +605,39 @@ const MUSIC_TRACKS = [
     src: "/music/bai-4.mp3",
     cover: "/music/hoan-tien-avatar.png",
     sourceUrl: "",
-    requiredOrders: 60,
+    requiredOrders: 7,
+  },
+  {
+    id: "bai-5",
+    title: "Cha Và Con Gái - Thùy Chi",
+    src: "/music/bai-5.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 10,
+  },
+  {
+    id: "bai-6",
+    title: "Quẻ Bói - Thôi Tử Cách",
+    src: "/music/bai-6.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 15,
+  },
+  {
+    id: "bai-7",
+    title: "Vì Con - Phú Lê",
+    src: "/music/bai-7.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 20,
+  },
+  {
+    id: "bai-8",
+    title: "Tay Trái Chỉ Trăng - Tát Đỉnh Đỉnh",
+    src: "/music/bai-8.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 30,
   },
 ];
 
@@ -2148,16 +2187,22 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
           <div className="bg-panel border border-border rounded-2xl p-6 sm:p-7 max-w-md">
             <p className="text-xs text-muted uppercase tracking-widest mb-4">Danh sách bài hát</p>
             <div className="space-y-4">
-              {MUSIC_TRACKS.map((track, idx) => (
-                <MusicTrackCard
-                  key={track.id}
-                  track={track}
-                  index={idx}
-                  completedOrders={completedOrdersCount}
-                  nowPlayingId={nowPlayingId}
-                  onRequestPlay={setNowPlayingId}
-                />
-              ))}
+              {(() => {
+                const firstLockedIdx = MUSIC_TRACKS.findIndex(
+                  (t) => completedOrdersCount < (t.requiredOrders || 1)
+                );
+                return MUSIC_TRACKS.map((track, idx) => (
+                  <MusicTrackCard
+                    key={track.id}
+                    track={track}
+                    index={idx}
+                    completedOrders={completedOrdersCount}
+                    nowPlayingId={nowPlayingId}
+                    onRequestPlay={setNowPlayingId}
+                    blurRequirement={firstLockedIdx !== -1 && idx > firstLockedIdx}
+                  />
+                ));
+              })()}
             </div>
           </div>
         )}
