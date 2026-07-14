@@ -234,19 +234,15 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Khung tên khách hàng (vd "Hello Bích") — viền cầu vồng chạy sáng
-   liên tục, nền sáng, chữ đậm màu đỏ cam nổi bật.
+   Khung tên khách hàng (vd "Hello Bích") — viền xanh lá tĩnh (không
+   chạy sáng/nhấp nháy), nền sáng, chữ đậm màu xanh lá đậm nổi bật,
+   đồng bộ với logo thương hiệu.
    ───────────────────────────────────────────────────────────── */
 .vip-name-frame {
   position: relative;
   padding: 3px;
   border-radius: 18px;
-  background: linear-gradient(
-    90deg,
-    #ff4d4d, #ff9d3b, #ffe93b, #4dd67a, #3bb8ff, #8a5cff, #ff4d4d
-  );
-  background-size: 300% 100%;
-  animation: rainbow-chase 5s linear infinite;
+  background: linear-gradient(90deg, #16c261, #4ade80);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
 }
 .vip-name-frame-inner {
@@ -264,7 +260,7 @@ body {
   font-style: normal;
   font-weight: 700;
   letter-spacing: 0.01em;
-  color: #e0524f;
+  color: #0f8a45;
 }
 .vip-name-input {
   font-family: var(--font-elegant), serif;
@@ -272,12 +268,12 @@ body {
   font-weight: 700;
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(224, 82, 79, 0.55);
-  color: #e0524f;
+  border-bottom: 1px solid rgba(15, 138, 69, 0.55);
+  color: #0f8a45;
   outline: none;
 }
 .vip-name-input:focus {
-  border-bottom-color: #e0524f;
+  border-bottom-color: #0f8a45;
 }
 .vip-edit-btn-outside {
   width: 34px;

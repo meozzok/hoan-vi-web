@@ -214,7 +214,12 @@ function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequest
   }
 
   return (
-    <div className={`bg-surface border border-border rounded-xl p-4 flex items-center gap-3 ${isLocked ? "opacity-80" : ""}`}>
+    <div
+      className={`border border-border rounded-xl p-4 flex items-center gap-3 ${
+        isLocked ? "bg-surface opacity-80" : ""
+      }`}
+      style={isLocked ? undefined : { backgroundColor: "#eaf4ff" }}
+    >
       <div className="flex flex-col items-center justify-center text-center w-14 shrink-0">
         <span className="text-[10px] text-muted leading-tight">Hoàn thành</span>
         <span className="font-mono-num text-xs font-bold leading-tight" style={{ color: badgeColor }}>
@@ -306,7 +311,11 @@ function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequest
 
       <div className="min-w-0 flex-1">
         <p className="text-[11px] text-muted mb-0.5">Bài {index + 1}</p>
-        {track.sourceUrl ? (
+        {isLocked ? (
+          <p className="font-semibold text-sm sm:text-base leading-snug line-clamp-2">
+            Nghe nhạc cùng Phương Thảo
+          </p>
+        ) : track.sourceUrl ? (
           <a
             href={track.sourceUrl}
             target="_blank"
@@ -332,9 +341,6 @@ function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequest
 
         <div className="flex items-center justify-between">
           <p className="text-[11px] text-muted font-mono-num">{formatTrackTime(currentTime)}</p>
-          {isLocked ? (
-            <p className="text-[11px] text-[#e0524f] font-semibold">Hoàn thành đủ đơn để mở khoá</p>
-          ) : null}
           <p className="text-[11px] text-muted font-mono-num">{formatTrackTime(duration)}</p>
         </div>
       </div>
@@ -565,7 +571,7 @@ const MUSIC_TRACKS = [
     id: "bai-1",
     title: "Nhật Ký Của Mẹ - Hiền Thục",
     src: "/music/bai-1.mp3",
-    cover: "/music/bai-1-avatar.png",
+    cover: "/music/hoan-tien-avatar.png",
     sourceUrl:
       "https://pianofingers.vn/sheet-nhac/hop-am-bai-hat-nhat-ky-cua-me-479.html?srsltid=AfmBOopUyrXk7ogg917yvksoUHh_s6U3bCHe8ZC4tr8K9iBwDnIAaBzA",
     requiredOrders: 1,
@@ -574,7 +580,7 @@ const MUSIC_TRACKS = [
     id: "bai-2",
     title: "Anh Nên Yêu Cô Ấy - N Ly",
     src: "/music/bai-2.mp3",
-    cover: "/music/bai-1-avatar.png",
+    cover: "/music/hoan-tien-avatar.png",
     sourceUrl: "",
     requiredOrders: 2,
   },
@@ -582,9 +588,17 @@ const MUSIC_TRACKS = [
     id: "bai-3",
     title: "Cạn Tình Như Thế - Kiều Chi Cover",
     src: "/music/bai-3.mp3",
-    cover: "/music/bai-1-avatar.png",
+    cover: "/music/hoan-tien-avatar.png",
     sourceUrl: "",
     requiredOrders: 50,
+  },
+  {
+    id: "bai-4",
+    title: "Hạnh Phúc Không Chọn - Em (Song Thư)",
+    src: "/music/bai-4.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 60,
   },
 ];
 
@@ -2159,19 +2173,24 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
           </p>
         )}
 
-        {/* Liên hệ hỗ trợ — đồng bộ với trang đăng nhập, hiện ở cả 3 tab */}
+        {/* Liên hệ hỗ trợ — đồng bộ với trang đăng nhập, hiện ở tab Tạo link/Đơn hàng/Ví Tiền.
+           Riêng tab Music đổi thành lời chúc thay vì thông tin liên hệ. */}
         <div className="text-center pt-3 pb-2">
-          <p className="text-[11px] text-muted">
-            Liên hệ hỗ trợ:{" "}
-            <a
-              href="https://zalo.me/0902431867"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#3f95b0] font-bold hover:underline"
-            >
-              Zalo (0902431867)
-            </a>
-          </p>
+          {activeTab === "music" ? (
+            <p className="text-[11px] text-muted">Chúc bạn nghe nhạc vui vẻ!</p>
+          ) : (
+            <p className="text-[11px] text-muted">
+              Liên hệ hỗ trợ:{" "}
+              <a
+                href="https://zalo.me/0902431867"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#3f95b0] font-bold hover:underline"
+              >
+                Zalo (0902431867)
+              </a>
+            </p>
+          )}
         </div>
       </div>
 
