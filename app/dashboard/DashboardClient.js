@@ -117,6 +117,156 @@ function WalletTabIcon({ className = "" }) {
   );
 }
 
+function MusicTabIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9 18V5l12-2v13" />
+      <circle cx="6" cy="18" r="3" />
+      <circle cx="18" cy="16" r="3" />
+    </svg>
+  );
+}
+
+function PlayIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 5.5v13l11-6.5-11-6.5Z" />
+    </svg>
+  );
+}
+
+function PauseIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <rect x="6" y="5" width="4.5" height="14" rx="1" />
+      <rect x="13.5" y="5" width="4.5" height="14" rx="1" />
+    </svg>
+  );
+}
+
+function formatTrackTime(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60)
+    .toString()
+    .padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+// Thẻ 1 bài hát ở tab Music: avatar tròn có nút bật/tắt ở giữa, viền SVG
+// quanh avatar vẽ theo tiến trình phát và tự xoay ngược chiều với avatar.
+function MusicTrackCard({ track, index }) {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0); // 0-100
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  const RADIUS = 42;
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+  function togglePlay() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play().catch(() => {});
+    }
+  }
+
+  return (
+    <div className="bg-surface border border-border rounded-xl p-4 flex items-center gap-4">
+      <div className="relative w-24 h-24 shrink-0">
+        <svg
+          viewBox="0 0 96 96"
+          className={`absolute inset-0 w-full h-full music-avatar-ring${
+            isPlaying ? " is-playing" : ""
+          }`}
+        >
+          <circle
+            cx="48"
+            cy="48"
+            r={RADIUS}
+            fill="none"
+            stroke="var(--color-border, rgba(139,95,191,0.25))"
+            strokeWidth="4"
+          />
+          <circle
+            cx="48"
+            cy="48"
+            r={RADIUS}
+            fill="none"
+            stroke="#eab308"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray={CIRCUMFERENCE}
+            strokeDashoffset={CIRCUMFERENCE * (1 - progress / 100)}
+            transform="rotate(-90 48 48)"
+          />
+        </svg>
+
+        <img
+          src={track.cover}
+          alt={track.title}
+          className={`absolute inset-[10px] w-[76px] h-[76px] rounded-full object-cover music-avatar-art${
+            isPlaying ? " is-playing" : ""
+          }`}
+        />
+
+        <button
+          type="button"
+          onClick={togglePlay}
+          aria-label={isPlaying ? "Tạm dừng" : "Phát nhạc"}
+          title={isPlaying ? "Tạm dừng" : "Phát nhạc"}
+          className="absolute inset-0 flex items-center justify-center cursor-pointer group"
+        >
+          <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-black/45 text-white backdrop-blur-sm group-hover:bg-black/60 transition-colors">
+            {isPlaying ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4 ml-0.5" />}
+          </span>
+        </button>
+
+        <audio
+          ref={audioRef}
+          src={track.src}
+          preload="none"
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => setIsPlaying(false)}
+          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
+          onTimeUpdate={(e) => {
+            const audio = e.currentTarget;
+            setCurrentTime(audio.currentTime || 0);
+            if (audio.duration) {
+              setProgress((audio.currentTime / audio.duration) * 100);
+            }
+          }}
+          className="hidden"
+        />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] text-muted mb-0.5">Bài {index + 1}</p>
+        {track.sourceUrl ? (
+          <a
+            href={track.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-sm sm:text-base leading-snug hover:underline hover:text-highlight transition-colors line-clamp-2"
+          >
+            {track.title}
+          </a>
+        ) : (
+          <p className="font-semibold text-sm sm:text-base leading-snug line-clamp-2">{track.title}</p>
+        )}
+        <p className="text-[11px] text-muted mt-1.5 font-mono-num">
+          {formatTrackTime(currentTime)} / {formatTrackTime(duration)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function SearchIcon({ className = "" }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
@@ -330,6 +480,19 @@ const TABS = [
   { id: "link", label: "Tạo link", Icon: LinkTabIcon },
   { id: "orders", label: "Đơn hàng", Icon: OrdersTabIcon },
   { id: "wallet", label: "Ví Tiền", Icon: WalletTabIcon },
+  { id: "music", label: "Music", Icon: MusicTabIcon },
+];
+
+// Danh sách bài nhạc hiển thị ở tab Music — file đặt trong public/music/.
+const MUSIC_TRACKS = [
+  {
+    id: "bai-1",
+    title: "Nhật Ký Của Mẹ - Hiền Thục",
+    src: "/music/bai-1.mp3",
+    cover: "/music/bai-1-avatar.png",
+    sourceUrl:
+      "https://pianofingers.vn/sheet-nhac/hop-am-bai-hat-nhat-ky-cua-me-479.html?srsltid=AfmBOopUyrXk7ogg917yvksoUHh_s6U3bCHe8ZC4tr8K9iBwDnIAaBzA",
+  },
 ];
 
 // Tối đa 10 link được tạo trong 1 lần dùng chế độ "Tạo nhiều link".
@@ -839,6 +1002,9 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     headerTitle = "Tiền tiết kiệm của SẾP";
     headerIsRainbow = true;
   }
+  if (activeTab === "music") {
+    headerTitle = "Music";
+  }
 
   return (
     <main className={`login-pink theme-${theme} min-h-screen`}>
@@ -940,10 +1106,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         </div>
 
         {activeTab === "link" && (
-          <div className="space-y-5">
-            {/* Khung độc lập: dòng nhắc "Tiền kiếm khó lắm..." — không còn
-                dùng chung khung lớn với ô tạo link bên dưới nữa. */}
-            <div className="rainbow-frame inline-block w-full">
+          <div className="bg-panel border border-border rounded-2xl p-6 sm:p-7">
+            <div className="rainbow-frame mb-5 inline-block w-full">
               <div className="rainbow-frame-inner px-4 py-2.5">
                 <p className="text-highlight text-sm font-bold text-center">
                   Tiền kiếm khó lắm. Nhớ tiết kiệm nhé!
@@ -951,9 +1115,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </div>
             </div>
 
-            {/* Khung độc lập của chính nó: từ nút chọn chế độ đến dòng lưu ý
-                quan trọng — tách hẳn khỏi khung nhắc nhở tiết kiệm ở trên. */}
-            <div className="bg-panel border border-border rounded-2xl p-5 sm:p-6">
+            {/* Khung gộp: từ nút chọn chế độ đến dòng lưu ý quan trọng — đóng thành 1 khối */}
+            <div className="rounded-2xl border-2 border-border/70 p-4 sm:p-5">
               {/* Chọn chế độ: tạo 1 link hoặc nhiều link cùng lúc (tối đa 10 link) */}
               <div className="flex items-center justify-between gap-3 mb-4">
                 <button
@@ -1006,12 +1169,12 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     <div className="relative">
                       <textarea
                         required
-                        rows={4}
+                        rows={3}
                         value={multiUrlsText}
                         onChange={(e) => setMultiUrlsText(e.target.value)}
                         onPaste={handleMultiPaste}
-                        placeholder={"Dán link sản phẩm vào đây!\n(Mỗi link 1 dòng, tối đa 10 link)"}
-                        className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-14 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60 placeholder:leading-relaxed resize-y"
+                        placeholder="Dán link sản phẩm vào đây!"
+                        className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-14 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60 resize-y"
                       />
                       <button
                         type="button"
@@ -1088,8 +1251,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             )}
 
             {batchResults.length > 0 && (
-              <div className={batchResults.length > 1 ? "mt-5 product-list-frame" : "mt-5"}>
-                <div className="space-y-3">
+              <div className="mt-5 space-y-3">
                 {batchResults.map((r, idx) => {
                   if (r.status === "error") {
                     return (
@@ -1110,7 +1272,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   return (
                     <div
                       key={r.key}
-                      className="product-card relative p-4"
+                      className="relative bg-surface border border-border rounded-lg p-4"
                     >
                       {/* Dòng "Lưu ý quan trọng để được hoàn tiền" nằm riêng 1
                           hàng, tách biệt khỏi tên sản phẩm/nút yêu thích. */}
@@ -1164,7 +1326,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                           </div>
                           <p className="text-xs mt-0.5">
                             <span className="text-danger">Hoa hồng ước tính:</span>{" "}
-                            <span className="money-chip font-bold font-mono-num" style={{ color: ESTIMATE_GREEN }}>
+                            <span className="font-bold font-mono-num" style={{ color: ESTIMATE_GREEN }}>
                               {item.commissionStr}
                             </span>
                           </p>
@@ -1190,7 +1352,6 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     </div>
                   );
                 })}
-                </div>
               </div>
             )}
           </div>
@@ -1201,13 +1362,13 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             lắm..." / khung tạo link ở trên, tự ẩn khi đã tạo link thành công.
             Cách đều và cách xa cả khung trên lẫn khung "Lịch sử tạo link". */}
         {activeTab === "link" && batchSuccessCount === 0 && (
-          <div className="mt-5 mb-5">
+          <div className="mt-10 mb-10">
             <CtaStepTracker />
           </div>
         )}
 
         {activeTab === "link" && (
-          <div className="mt-5 bg-panel border border-border rounded-2xl">
+          <div className="mt-10 bg-panel border border-border rounded-2xl">
             <div className="sticky top-2 z-20 bg-panel rounded-t-2xl p-5 sm:p-6 pb-4 border-b border-border/60 shadow-sm shadow-black/5">
               <p className="font-display font-bold text-lg mb-3 text-center" style={{ color: "#8b5fbf" }}>Lịch sử tạo link</p>
               <div className="flex items-stretch gap-2 w-full">
@@ -1747,12 +1908,10 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         {activeTab === "wallet" && (
           <div className="ticket-notch bg-panel border border-border rounded-2xl overflow-hidden max-w-md">
             <div className="p-6 sm:p-7">
-              <p className="text-xs text-muted uppercase tracking-widest mb-2 font-bold">Có sẵn để rút</p>
-              <div className="inline-block border border-[#8fe0b0] bg-[#e9fbf1] rounded-xl px-4 py-2.5">
-                <p className="font-display font-bold text-4xl text-[#16c261] tabular-nums">
-                  {wallet ? formatVnd(wallet.coTheRutHien) : "—"}
-                </p>
-              </div>
+              <p className="text-xs text-muted uppercase tracking-widest mb-2">Có sẵn để rút</p>
+              <p className="font-display font-bold text-4xl text-[#16c261] tabular-nums">
+                {wallet ? formatVnd(wallet.coTheRutHien) : "—"}
+              </p>
 
               {wallet && (
                 <div className="mt-4 space-y-3">
@@ -1824,15 +1983,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             {wallet && (
               <>
                 <div className="ticket-dashed" />
-                <div className="px-6 sm:px-7 pt-4">
-                  <p
-                    className="inline-flex items-center justify-center w-full bg-[#fff4b8] border border-[#f5c944] text-red-600 font-bold rounded-full px-3 py-1.5 text-center whitespace-nowrap overflow-hidden"
-                    style={{ fontSize: "clamp(6px, 2.1vw, 11px)" }}
-                  >
-                    💡Hoa hồng ở &gt;Đã hoàn thành&lt; sẽ chuyển qua &gt;Có sẵn để rút&lt; sau 1 ngày
-                  </p>
-                </div>
-                <div className="p-6 sm:p-7 pt-4 grid grid-cols-2 gap-4">
+                <div className="p-6 sm:p-7 grid grid-cols-2 gap-4">
                   <div className="border border-border rounded-xl px-3.5 py-3">
                     <p className="text-xs text-muted mb-1">🟡 Tổng hoa hồng</p>
                     <p className="font-mono-num text-lg font-bold text-[#eab308]">
@@ -1853,7 +2004,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   <div className="border border-border rounded-xl px-3.5 py-3">
                     <p className="text-xs text-muted mb-1">🟢 Đã hoàn thành</p>
                     <p className="font-mono-num text-lg font-bold text-[#16c261]">
-                      {formatVnd(wallet.hoanThanhChuaRut)}
+                      {formatVnd(wallet.coTheRutHien)}
                     </p>
                   </div>
                   <div className="border border-border rounded-xl px-3.5 py-3">
@@ -1865,6 +2016,17 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {activeTab === "music" && (
+          <div className="bg-panel border border-border rounded-2xl p-6 sm:p-7 max-w-md">
+            <p className="text-xs text-muted uppercase tracking-widest mb-4">Danh sách bài hát</p>
+            <div className="space-y-4">
+              {MUSIC_TRACKS.map((track, idx) => (
+                <MusicTrackCard key={track.id} track={track} index={idx} />
+              ))}
+            </div>
           </div>
         )}
 
