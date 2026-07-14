@@ -321,6 +321,7 @@ body {
   border-radius: 8px;
   padding: 1px 8px;
 }
+/* Dòng cảnh báo "⚠️ Lưu ý quan trọng để được hoàn tiền" — nền vàng nhạt sáng,
    không viền. Tiêu đề + 5 gạch đầu dòng nằm chung 1 khối (không tách ô). */
 .notice-box {
   background: #fff4b8;
