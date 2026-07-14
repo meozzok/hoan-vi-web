@@ -1297,7 +1297,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             </p>
                             <p className="text-xs mt-0.5">
                               <span className="text-danger">Hoa hồng ước tính:</span>{" "}
-                              <span className="money-chip font-bold font-mono-num" style={{ color: ESTIMATE_GREEN }}>
+                              <span className="font-bold font-mono-num" style={{ color: ESTIMATE_GREEN }}>
                                 {item.commissionStr}
                               </span>
                             </p>
@@ -1368,8 +1368,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                                 </span>
                               </div>
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-bold">
-                              <span className="money-chip" style={{ color: ESTIMATE_GREEN }}>{item.commissionStr}</span>
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: ESTIMATE_GREEN }}>
+                              {item.commissionStr}
                             </td>
                             <td className="px-4 py-3.5">
                               <div className="flex items-center justify-center gap-2">
@@ -1605,21 +1605,21 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                             style={{ border: `1px solid ${AMOUNT_COLORS.gross.border}`, background: AMOUNT_COLORS.gross.soft }}
                           >
                             <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Hoa hồng</p>
-                            <p className="mt-0.5"><span className="money-chip font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.gross.solid }}>{formatVnd(gross)}</span></p>
+                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.gross.solid }}>{formatVnd(gross)}</p>
                           </div>
                           <div
                             className="text-center rounded-lg py-1.5"
                             style={{ border: `1px solid ${AMOUNT_COLORS.afterTax.border}`, background: AMOUNT_COLORS.afterTax.soft }}
                           >
                             <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Sau thuế</p>
-                            <p className="mt-0.5"><span className="money-chip font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax.solid }}>{formatVnd(afterTax)}</span></p>
+                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.afterTax.solid }}>{formatVnd(afterTax)}</p>
                           </div>
                           <div
                             className="text-center rounded-lg py-1.5"
                             style={{ border: `1px solid ${AMOUNT_COLORS.final80.border}`, background: AMOUNT_COLORS.final80.soft }}
                           >
                             <p className="text-[10px] tracking-tight whitespace-nowrap text-ink font-semibold">Hoa hồng thực nhận</p>
-                            <p className="mt-0.5"><span className="money-chip font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80.solid }}>{formatVnd(final80)}</span></p>
+                            <p className="font-mono-num text-sm font-bold whitespace-nowrap" style={{ color: AMOUNT_COLORS.final80.solid }}>{formatVnd(final80)}</p>
                           </div>
                         </div>
                       </div>
@@ -1661,14 +1661,14 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                                 {orderNumber}.🛍️ {truncateChars(order.productName, 60)}
                               </span>
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-bold">
-                              <span className="money-chip" style={{ color: AMOUNT_COLORS.gross.solid }}>{formatVnd(gross)}</span>
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.gross.solid }}>
+                              {formatVnd(gross)}
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-bold">
-                              <span className="money-chip" style={{ color: AMOUNT_COLORS.afterTax.solid }}>{formatVnd(afterTax)}</span>
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.afterTax.solid }}>
+                              {formatVnd(afterTax)}
                             </td>
-                            <td className="px-4 py-3.5 text-right font-mono-num font-bold">
-                              <span className="money-chip" style={{ color: AMOUNT_COLORS.final80.solid }}>{formatVnd(final80)}</span>
+                            <td className="px-4 py-3.5 text-right font-mono-num font-bold" style={{ color: AMOUNT_COLORS.final80.solid }}>
+                              {formatVnd(final80)}
                             </td>
                             <td className="px-4 py-3.5">
                               <span
@@ -1748,11 +1748,11 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
           <div className="ticket-notch bg-panel border border-border rounded-2xl overflow-hidden max-w-md">
             <div className="p-6 sm:p-7">
               <p className="text-xs text-muted uppercase tracking-widest mb-2">Có sẵn để rút</p>
-              <p className="font-display font-bold text-4xl tabular-nums">
-                <span className="money-chip px-3 py-0.5 text-[#16c261]">
+              <div className="inline-block border border-[#8fe0b0] bg-[#e9fbf1] rounded-xl px-4 py-2.5">
+                <p className="font-display font-bold text-4xl text-[#16c261] tabular-nums">
                   {wallet ? formatVnd(wallet.coTheRutHien) : "—"}
-                </span>
-              </p>
+                </p>
+              </div>
 
               {wallet && (
                 <div className="mt-4 space-y-3">
@@ -1824,42 +1824,42 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             {wallet && (
               <>
                 <div className="ticket-dashed" />
-                <div className="p-6 sm:p-7 grid grid-cols-2 gap-4">
+                <div className="px-6 sm:px-7 pt-4">
+                  <p
+                    className="inline-flex items-center justify-center w-full bg-[#fff4b8] border border-[#f5c944] text-[#8a6412] font-bold rounded-full px-3 py-1.5 text-center whitespace-nowrap overflow-hidden"
+                    style={{ fontSize: "clamp(8px, 2.6vw, 12px)" }}
+                  >
+                    💡Hoa hồng ở &gt;Đã hoàn thành&lt; sẽ chuyển qua &gt;Có sẵn để rút&lt; sau 1 ngày
+                  </p>
+                </div>
+                <div className="p-6 sm:p-7 pt-4 grid grid-cols-2 gap-4">
                   <div className="border border-border rounded-xl px-3.5 py-3">
                     <p className="text-xs text-muted mb-1">🟡 Tổng hoa hồng</p>
-                    <p className="font-mono-num text-lg font-bold">
-                      <span className="money-chip text-[#eab308]">
-                        {formatVnd(
-                          commissionBreakdown(wallet.dangCho).final80 +
-                            wallet.hoanThanhChuaRut +
-                            wallet.coTheRutHien +
-                            wallet.daNhan
-                        )}
-                      </span>
+                    <p className="font-mono-num text-lg font-bold text-[#eab308]">
+                      {formatVnd(
+                        commissionBreakdown(wallet.dangCho).final80 +
+                          wallet.hoanThanhChuaRut +
+                          wallet.coTheRutHien +
+                          wallet.daNhan
+                      )}
                     </p>
                   </div>
                   <div className="border border-border rounded-xl px-3.5 py-3">
                     <p className="text-xs text-muted mb-1">🟣 Đang chờ xử lý</p>
-                    <p className="font-mono-num text-lg font-bold">
-                      <span className="money-chip text-[#a855f7]">
-                        {formatVnd(commissionBreakdown(wallet.dangCho).final80)}
-                      </span>
+                    <p className="font-mono-num text-lg font-bold text-[#a855f7]">
+                      {formatVnd(commissionBreakdown(wallet.dangCho).final80)}
                     </p>
                   </div>
                   <div className="border border-border rounded-xl px-3.5 py-3">
                     <p className="text-xs text-muted mb-1">🟢 Đã hoàn thành</p>
-                    <p className="font-mono-num text-lg font-bold">
-                      <span className="money-chip text-[#16c261]">
-                        {formatVnd(wallet.coTheRutHien)}
-                      </span>
+                    <p className="font-mono-num text-lg font-bold text-[#16c261]">
+                      {formatVnd(wallet.hoanThanhChuaRut)}
                     </p>
                   </div>
                   <div className="border border-border rounded-xl px-3.5 py-3">
                     <p className="text-xs text-muted mb-1">🔴 Đã nhận</p>
-                    <p className="font-mono-num text-lg font-bold">
-                      <span className="money-chip text-[#ef4444]">
-                        {formatVnd(wallet.daNhan)}
-                      </span>
+                    <p className="font-mono-num text-lg font-bold text-[#ef4444]">
+                      {formatVnd(wallet.daNhan)}
                     </p>
                   </div>
                 </div>
