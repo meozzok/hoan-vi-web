@@ -1826,8 +1826,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 <div className="ticket-dashed" />
                 <div className="px-6 sm:px-7 pt-4">
                   <p
-                    className="inline-flex items-center justify-center w-full bg-[#fff4b8] border border-[#f5c944] text-[#8a6412] font-bold rounded-full px-3 py-1.5 text-center whitespace-nowrap overflow-hidden"
-                    style={{ fontSize: "clamp(8px, 2.6vw, 12px)" }}
+                    className="inline-flex items-center justify-center w-full bg-[#fff4b8] border border-[#f5c944] text-red-600 font-bold rounded-full px-3 py-1.5 text-center whitespace-nowrap overflow-hidden"
+                    style={{ fontSize: "clamp(6px, 2.1vw, 11px)" }}
                   >
                     💡Hoa hồng ở &gt;Đã hoàn thành&lt; sẽ chuyển qua &gt;Có sẵn để rút&lt; sau 1 ngày
                   </p>
