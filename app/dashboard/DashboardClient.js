@@ -157,12 +157,12 @@ function ChevronDownIcon({ className = "" }) {
 // nằm chung 1 khối nền vàng nhạt, không tách thành 2 ô riêng.
 function ImportantNotice({ expanded, onToggle }) {
   return (
-    <div className="notice-box">
+    <div className={expanded ? "notice-box" : ""}>
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={expanded}
-        className="notice-box-header cursor-pointer"
+        className={expanded ? "notice-box-header cursor-pointer" : "notice-box-header-plain cursor-pointer"}
       >
         <span className="inline-flex items-center gap-1.5">
           <span className="text-[12.5px] sm:text-sm font-bold not-italic text-[#d6362f]">
@@ -986,17 +986,16 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                       value={shopeeUrl}
                       onChange={(e) => setShopeeUrl(e.target.value)}
                       placeholder="Dán link sản phẩm vào đây!"
-                      className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-20 sm:pr-24 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60"
+                      className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-14 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60"
                     />
                     <button
                       type="button"
                       onClick={handlePasteUrl}
                       aria-label="Dán link từ clipboard"
                       title="Dán link"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 px-2.5 h-8 rounded-md bg-panel-2 text-gold hover:brightness-95 active:scale-90 transition-all cursor-pointer text-xs font-semibold"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-8 h-8 rounded-md bg-panel-2 text-gold hover:brightness-95 active:scale-90 transition-all cursor-pointer"
                     >
                       <PasteIcon className="w-4 h-4" />
-                      Dán
                     </button>
                   </div>
                 ) : (
@@ -1008,18 +1007,17 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                         value={multiUrlsText}
                         onChange={(e) => setMultiUrlsText(e.target.value)}
                         onPaste={handleMultiPaste}
-                        placeholder={`Dán link sản phẩm vào đây!\nhttps://shopee.vn/...\n(mỗi link 1 dòng, tối đa ${MAX_MULTI_LINKS} link)`}
-                        className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-20 sm:pr-24 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60 resize-y"
+                        placeholder="Dán link sản phẩm vào đây!"
+                        className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-14 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60 resize-y"
                       />
                       <button
                         type="button"
                         onClick={handlePasteMultiUrl}
                         aria-label="Dán link từ clipboard"
                         title="Dán link"
-                        className="absolute right-2 top-2.5 inline-flex items-center gap-1 px-2.5 h-8 rounded-md bg-panel-2 text-gold hover:brightness-95 active:scale-90 transition-all cursor-pointer text-xs font-semibold"
+                        className="absolute right-2 top-2.5 inline-flex items-center justify-center w-8 h-8 rounded-md bg-panel-2 text-gold hover:brightness-95 active:scale-90 transition-all cursor-pointer"
                       >
                         <PasteIcon className="w-4 h-4" />
-                        Dán
                       </button>
                     </div>
                     <p className={`text-xs mt-1.5 ${multiUrlsCount > MAX_MULTI_LINKS ? "text-danger font-semibold" : "text-muted"}`}>
@@ -1195,17 +1193,18 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
         {/* Khung riêng hoàn toàn: step-tracker "Dán Link → Mua Ngay → Đặt
             Hàng → Hoàn Tiền" — không dùng chung khung với ô "Tiền kiếm khó
-            lắm..." / khung tạo link ở trên, tự ẩn khi đã tạo link thành công. */}
+            lắm..." / khung tạo link ở trên, tự ẩn khi đã tạo link thành công.
+            Cách đều và cách xa cả khung trên lẫn khung "Lịch sử tạo link". */}
         {activeTab === "link" && batchSuccessCount === 0 && (
-          <div className="mb-8">
+          <div className="mt-10 mb-10">
             <CtaStepTracker />
           </div>
         )}
 
         {activeTab === "link" && (
-          <div className="mt-6 bg-panel border border-border rounded-2xl">
+          <div className="mt-10 bg-panel border border-border rounded-2xl">
             <div className="sticky top-2 z-20 bg-panel rounded-t-2xl p-5 sm:p-6 pb-4 border-b border-border/60 shadow-sm shadow-black/5">
-              <p className="font-display font-bold text-lg mb-3">Lịch sử tạo link</p>
+              <p className="font-display font-bold text-lg mb-3 text-center" style={{ color: "#8b5fbf" }}>Lịch sử tạo link</p>
               <div className="flex items-stretch gap-2 w-full">
                 <button
                   type="button"
@@ -1243,7 +1242,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             ) : (
               <>
                 {/* Dạng thẻ - dùng trên điện thoại */}
-                <div className="sm:hidden flex flex-col gap-3 p-3 pt-0">
+                <div className="sm:hidden flex flex-col gap-3 p-3 pt-4">
                   {pagedHistory.map((item) => {
                     const stt = historyStt.get(item.id);
                     return (
