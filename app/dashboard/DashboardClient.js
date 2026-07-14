@@ -144,6 +144,15 @@ function PauseIcon({ className = "" }) {
   );
 }
 
+function LockIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+  );
+}
+
 function formatTrackTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
   const m = Math.floor(seconds / 60);
@@ -153,19 +162,27 @@ function formatTrackTime(seconds) {
   return `${m}:${s}`;
 }
 
-// Thẻ 1 bài hát ở tab Music: avatar tròn có nút bật/tắt ở giữa, viền SVG
-// quanh avatar vẽ theo tiến trình phát và tự xoay ngược chiều với avatar.
-function MusicTrackCard({ track, index }) {
+// Thẻ 1 bài hát ở tab Music: bên trái là huy hiệu "Hoàn thành x/y đơn", giữa
+// là avatar tròn có nút bật/tắt, viền SVG (gradient hồng-đỏ) vẽ theo tiến
+// trình phát và tự xoay ngược chiều với avatar. Bài hát bị khoá nếu khách
+// chưa đủ số đơn hoàn thành theo yêu cầu — không thể bấm phát hay tua.
+function MusicTrackCard({ track, index, completedOrders }) {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0); // 0-100
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  const RADIUS = 42;
+  const RADIUS = 27;
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+  const gradientId = `music-ring-gradient-${track.id}`;
+
+  const required = track.requiredOrders || 1;
+  const doneForBadge = Math.min(completedOrders, required);
+  const isLocked = completedOrders < required;
 
   function togglePlay() {
+    if (isLocked) return;
     const audio = audioRef.current;
     if (!audio) return;
     if (isPlaying) {
@@ -175,54 +192,87 @@ function MusicTrackCard({ track, index }) {
     }
   }
 
+  function handleSeek(e) {
+    if (isLocked) return;
+    const audio = audioRef.current;
+    if (!audio || !duration) return;
+    const value = Number(e.target.value);
+    audio.currentTime = value;
+    setCurrentTime(value);
+    setProgress((value / duration) * 100);
+  }
+
   return (
-    <div className="bg-surface border border-border rounded-xl p-4 flex items-center gap-4">
-      <div className="relative w-24 h-24 shrink-0">
+    <div className={`bg-surface border border-border rounded-xl p-4 flex items-center gap-3 ${isLocked ? "opacity-80" : ""}`}>
+      <div className="flex flex-col items-center justify-center text-center w-14 shrink-0">
+        <span className="text-[10px] text-muted leading-tight">Hoàn thành</span>
+        <span className="font-mono-num text-xs font-bold text-[#e0524f] leading-tight">
+          {doneForBadge}/{required}
+        </span>
+        <span className="text-[10px] text-muted leading-tight">đơn</span>
+      </div>
+
+      <div className="relative w-16 h-16 shrink-0">
         <svg
-          viewBox="0 0 96 96"
+          viewBox="0 0 64 64"
           className={`absolute inset-0 w-full h-full music-avatar-ring${
             isPlaying ? " is-playing" : ""
           }`}
         >
+          <defs>
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#f472b6" />
+              <stop offset="100%" stopColor="#ef4444" />
+            </linearGradient>
+          </defs>
           <circle
-            cx="48"
-            cy="48"
+            cx="32"
+            cy="32"
             r={RADIUS}
             fill="none"
             stroke="var(--color-border, rgba(139,95,191,0.25))"
-            strokeWidth="4"
+            strokeWidth="3.5"
           />
           <circle
-            cx="48"
-            cy="48"
+            cx="32"
+            cy="32"
             r={RADIUS}
             fill="none"
-            stroke="#eab308"
-            strokeWidth="4"
+            stroke={`url(#${gradientId})`}
+            strokeWidth="3.5"
             strokeLinecap="round"
             strokeDasharray={CIRCUMFERENCE}
             strokeDashoffset={CIRCUMFERENCE * (1 - progress / 100)}
-            transform="rotate(-90 48 48)"
+            transform="rotate(-90 32 32)"
           />
         </svg>
 
         <img
           src={track.cover}
           alt={track.title}
-          className={`absolute inset-[10px] w-[76px] h-[76px] rounded-full object-cover music-avatar-art${
+          className={`absolute inset-[7px] w-[50px] h-[50px] rounded-full object-cover music-avatar-art${
             isPlaying ? " is-playing" : ""
-          }`}
+          }${isLocked ? " grayscale" : ""}`}
         />
 
         <button
           type="button"
           onClick={togglePlay}
-          aria-label={isPlaying ? "Tạm dừng" : "Phát nhạc"}
-          title={isPlaying ? "Tạm dừng" : "Phát nhạc"}
-          className="absolute inset-0 flex items-center justify-center cursor-pointer group"
+          disabled={isLocked}
+          aria-label={isLocked ? "Bài hát đang bị khoá" : isPlaying ? "Tạm dừng" : "Phát nhạc"}
+          title={isLocked ? "Hoàn thành đủ đơn để mở khoá" : isPlaying ? "Tạm dừng" : "Phát nhạc"}
+          className={`absolute inset-0 flex items-center justify-center group ${
+            isLocked ? "cursor-not-allowed" : "cursor-pointer"
+          }`}
         >
-          <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-black/45 text-white backdrop-blur-sm group-hover:bg-black/60 transition-colors">
-            {isPlaying ? <PauseIcon className="w-4 h-4" /> : <PlayIcon className="w-4 h-4 ml-0.5" />}
+          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-black/45 text-white backdrop-blur-sm group-hover:bg-black/60 transition-colors">
+            {isLocked ? (
+              <LockIcon className="w-3.5 h-3.5" />
+            ) : isPlaying ? (
+              <PauseIcon className="w-3.5 h-3.5" />
+            ) : (
+              <PlayIcon className="w-3.5 h-3.5 ml-0.5" />
+            )}
           </span>
         </button>
 
@@ -259,9 +309,25 @@ function MusicTrackCard({ track, index }) {
         ) : (
           <p className="font-semibold text-sm sm:text-base leading-snug line-clamp-2">{track.title}</p>
         )}
-        <p className="text-[11px] text-muted mt-1.5 font-mono-num">
-          {formatTrackTime(currentTime)} / {formatTrackTime(duration)}
-        </p>
+
+        <input
+          type="range"
+          min={0}
+          max={duration || 0}
+          step={0.1}
+          value={currentTime}
+          onChange={handleSeek}
+          disabled={isLocked || !duration}
+          className="w-full mt-2 accent-[#ef4444] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+        />
+
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] text-muted font-mono-num">{formatTrackTime(currentTime)}</p>
+          {isLocked ? (
+            <p className="text-[11px] text-[#e0524f] font-semibold">Hoàn thành đủ đơn để mở khoá</p>
+          ) : null}
+          <p className="text-[11px] text-muted font-mono-num">{formatTrackTime(duration)}</p>
+        </div>
       </div>
     </div>
   );
@@ -484,6 +550,7 @@ const TABS = [
 ];
 
 // Danh sách bài nhạc hiển thị ở tab Music — file đặt trong public/music/.
+// requiredOrders: số đơn "Hoàn thành" cần có để mở khoá bài hát.
 const MUSIC_TRACKS = [
   {
     id: "bai-1",
@@ -492,6 +559,15 @@ const MUSIC_TRACKS = [
     cover: "/music/bai-1-avatar.png",
     sourceUrl:
       "https://pianofingers.vn/sheet-nhac/hop-am-bai-hat-nhat-ky-cua-me-479.html?srsltid=AfmBOopUyrXk7ogg917yvksoUHh_s6U3bCHe8ZC4tr8K9iBwDnIAaBzA",
+    requiredOrders: 1,
+  },
+  {
+    id: "bai-2",
+    title: "Bài 2",
+    src: "/music/bai-2.mp3",
+    cover: "/music/bai-1-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 2,
   },
 ];
 
@@ -703,6 +779,12 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
   // Tổng số đơn trên toàn bộ đơn hàng (không phụ thuộc tìm kiếm).
   const ordersTotalCount = orders.length;
+
+  // Số đơn đã "Hoàn thành" — dùng để mở khoá các bài hát ở tab Music.
+  const completedOrdersCount = useMemo(
+    () => orders.filter((o) => classifyStatus(o.status) === "completed").length,
+    [orders]
+  );
 
   // Số thứ tự gốc của mỗi đơn (theo vị trí trong danh sách đầy đủ, chưa lọc) —
   // để khi tìm kiếm, đơn vẫn hiển thị đúng STT ban đầu thay vì đánh số lại theo kết quả lọc.
@@ -1003,7 +1085,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     headerIsRainbow = true;
   }
   if (activeTab === "music") {
-    headerTitle = "Music";
+    headerTitle = "Hòa mình cùng âm nhạc";
   }
 
   return (
@@ -1078,6 +1160,14 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   <PencilIcon className="w-4 h-4" />
                 </button>
               )}
+            </div>
+          ) : activeTab === "music" ? (
+            <div className="vip-name-frame inline-block">
+              <div className="vip-name-frame-inner">
+                <h1 className="vip-name-text text-2xl sm:text-3xl tracking-tight">
+                  {headerTitle}
+                </h1>
+              </div>
             </div>
           ) : (
             <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
@@ -2024,7 +2114,12 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             <p className="text-xs text-muted uppercase tracking-widest mb-4">Danh sách bài hát</p>
             <div className="space-y-4">
               {MUSIC_TRACKS.map((track, idx) => (
-                <MusicTrackCard key={track.id} track={track} index={idx} />
+                <MusicTrackCard
+                  key={track.id}
+                  track={track}
+                  index={idx}
+                  completedOrders={completedOrdersCount}
+                />
               ))}
             </div>
           </div>
