@@ -101,8 +101,9 @@ function LinkTabIcon({ className = "" }) {
 function OrdersTabIcon({ className = "" }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
-      <rect x="4" y="4" width="16" height="17" rx="2" />
-      <path d="M8 9h8M8 13h8M8 17h5" />
+      <path d="M3 4h2l2.4 12.2a2 2 0 0 0 2 1.6h7.2a2 2 0 0 0 2-1.6L21 8H6.2" />
+      <circle cx="9.5" cy="20" r="1.4" fill="currentColor" stroke="none" />
+      <circle cx="17.5" cy="20" r="1.4" fill="currentColor" stroke="none" />
     </svg>
   );
 }
@@ -576,10 +577,10 @@ function formatDateTime(value) {
 }
 
 const TABS = [
-  { id: "link", label: "Tạo link", Icon: LinkTabIcon },
-  { id: "orders", label: "Đơn hàng", Icon: OrdersTabIcon },
-  { id: "wallet", label: "Ví Tiền", Icon: WalletTabIcon },
   { id: "bxh", label: "BXH", Icon: LeaderboardTabIcon },
+  { id: "orders", label: "Đơn hàng", Icon: OrdersTabIcon },
+  { id: "link", label: "Tạo link", Icon: LinkTabIcon },
+  { id: "wallet", label: "Ví Tiền", Icon: WalletTabIcon },
   { id: "music", label: "Music", Icon: MusicTabIcon },
 ];
 
@@ -1484,21 +1485,28 @@ export default function DashboardClient({
 
         {/* Thanh chuyển tab (ẩn trên desktop vì đã có thanh cố định phía dưới) */}
         <div className="hidden sm:flex items-center gap-2 mb-6 bg-panel border border-border rounded-full p-1.5 w-fit">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer ${
-                activeTab === tab.id
-                  ? "bg-highlight text-white shadow-sm"
-                  : "text-muted hover:text-cream"
-              }`}
-            >
-              <tab.Icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
+          {TABS.map((tab) => {
+            const isFeatured = tab.id === "link";
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 rounded-full font-semibold transition-all cursor-pointer ${
+                  isFeatured
+                    ? "px-5 py-2.5 text-base scale-110 bg-highlight text-white shadow-lg shadow-highlight/40"
+                    : `px-4 py-2 text-sm ${
+                        activeTab === tab.id
+                          ? "bg-highlight text-white shadow-sm"
+                          : "text-muted hover:text-cream"
+                      }`
+                }`}
+              >
+                <tab.Icon className={isFeatured ? "w-5 h-5" : "w-4 h-4"} />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {activeTab === "link" && (
@@ -2725,19 +2733,34 @@ export default function DashboardClient({
 
       {/* Thanh chuyển tab cố định phía dưới màn hình (kiểu app di động) */}
       <nav className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-panel border-t border-border flex items-stretch pb-[env(safe-area-inset-bottom)]">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-semibold transition-colors cursor-pointer ${
-              activeTab === tab.id ? "text-highlight" : "text-muted"
-            }`}
-          >
-            <tab.Icon className="w-5 h-5" />
-            {tab.label}
-          </button>
-        ))}
+        {TABS.map((tab) => {
+          const isFeatured = tab.id === "link";
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-semibold transition-colors cursor-pointer ${
+                isFeatured ? "" : activeTab === tab.id ? "text-highlight" : "text-muted"
+              }`}
+            >
+              {isFeatured ? (
+                <span
+                  className={`relative -mt-7 flex items-center justify-center w-14 h-14 rounded-full border-4 border-panel shadow-lg shadow-highlight/40 transition-transform ${
+                    activeTab === tab.id ? "bg-highlight text-white scale-105" : "bg-highlight text-white"
+                  }`}
+                >
+                  <tab.Icon className="w-6 h-6" />
+                </span>
+              ) : (
+                <tab.Icon className="w-5 h-5" />
+              )}
+              <span className={isFeatured ? `mt-1 ${activeTab === tab.id ? "text-highlight" : "text-cream"}` : ""}>
+                {tab.label}
+              </span>
+            </button>
+          );
+        })}
       </nav>
 
       {/* Thông báo tạo link thành công — hiện giữa màn hình rồi tự mờ dần */}
