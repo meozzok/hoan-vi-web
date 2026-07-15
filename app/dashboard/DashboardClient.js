@@ -1540,7 +1540,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         )}
 
         {activeTab === "link" && (
-          <div className={`mt-5 ${historyOpen ? "bg-panel border border-border rounded-2xl" : "mb-8"}`}>
+          <div className="mt-8 mb-8 bg-panel border border-border rounded-2xl">
             <button
               type="button"
               onClick={() => setHistoryOpen((v) => !v)}
@@ -1548,7 +1548,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               className={
                 historyOpen
                   ? "sticky top-2 z-20 bg-panel rounded-t-2xl w-full text-left p-5 sm:p-6 pb-4 border-b border-border/60 shadow-sm shadow-black/5 cursor-pointer"
-                  : "w-full text-left cursor-pointer"
+                  : "w-full text-center py-4 rounded-2xl cursor-pointer"
               }
             >
               <span className={`flex items-center justify-center gap-1.5 ${historyOpen ? "mb-3" : ""}`}>
