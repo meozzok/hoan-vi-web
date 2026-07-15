@@ -2089,7 +2089,7 @@ export default function DashboardClient({
                 riêng khỏi danh sách đơn hàng, đặt lên trên và luôn cố định (sticky)
                 khi khách cuộn xuống xem đơn. Bộ lọc trạng thái nằm ngay dưới, cùng
                 cố định theo. */}
-            <div className="sticky top-2 z-30 mb-3 flex flex-col gap-2">
+            <div className="sticky top-16 z-30 mb-3 flex flex-col gap-2 pt-2 -mx-4 px-4 sm:mx-0 sm:px-0 sticky-blur-bg">
               <div className="flex items-stretch bg-[#e8f4fc] border border-[#bfe0f4] rounded-full overflow-hidden shadow-md shadow-black/5">
                 <div className="flex items-center gap-1.5 px-4 py-2 shrink-0">
                   <span className="font-display font-extrabold text-base text-[#2f6f95] tabular-nums">
