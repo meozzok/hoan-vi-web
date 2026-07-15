@@ -321,6 +321,15 @@ body {
   border-radius: 8px;
   padding: 1px 8px;
 }
+
+/* Nền mờ dùng cho các khối "dính" (sticky) khi cuộn trang — VD: thanh trên
+   cùng và khung tên khách hàng — để chữ/nội dung cuộn bên dưới không bị
+   chồng lên, đồng thời không bị "trôi" mất khỏi màn hình. */
+.sticky-blur-bg {
+  background: rgba(250, 246, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
 /* Dòng cảnh báo "⚠️ Lưu ý quan trọng để được hoàn tiền" — nền vàng nhạt sáng,
    không viền. Tiêu đề + 5 gạch đầu dòng nằm chung 1 khối (không tách ô). */
 .notice-box {

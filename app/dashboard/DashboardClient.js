@@ -732,6 +732,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   const [expandedNotes, setExpandedNotes] = useState({});
   // Trạng thái mở/đóng khối "Lưu ý quan trọng để được hoàn tiền" hiển thị trước khi tạo link.
   const [mainNoticeOpen, setMainNoticeOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // Đơn hàng: tìm kiếm theo mã đơn / tên sản phẩm + lọc theo trạng thái + phân trang.
   const [orderSearch, setOrderSearch] = useState("");
@@ -1128,7 +1129,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
     setTimeout(() => setCopiedOrderId(""), 1500);
   }
 
-  const displayName = localNickname || user.displayName || user.myId;
+  const displayName = localNickname || user.displayName || "Anh / Chị";
 
   function startEditingName() {
     setNameInput(displayName);
@@ -1165,7 +1166,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   return (
     <main className={`login-pink theme-${theme} min-h-screen`}>
       {/* Top bar */}
-      <header className="border-b border-border">
+      <header className="border-b border-border sticky top-0 z-40 sticky-blur-bg">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex flex-col items-start gap-0.5">
             <span className="font-display font-semibold text-sm tracking-tight">Hoàn Tiền Cùng Phương Thảo 😘</span>
@@ -1199,7 +1200,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </div>
             </div>
           ) : activeTab === "link" ? (
-            <div className="flex items-center gap-2.5">
+            <div className="sticky top-16 z-30 sticky-blur-bg -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 flex items-center gap-2.5">
               <div className="vip-name-frame inline-block">
                 <div className="vip-name-frame-inner">
                   {editingName ? (
@@ -1218,22 +1219,20 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     />
                   ) : (
                     <h1 className="vip-name-text text-2xl sm:text-3xl tracking-tight">
-                      {headerTitle}
+                      {headerTitle} <span>🌷</span>
                     </h1>
                   )}
                 </div>
               </div>
-              {!editingName && (
-                <button
-                  type="button"
-                  onClick={startEditingName}
-                  aria-label="Chỉnh sửa tên"
-                  title="Chỉnh sửa tên"
-                  className="vip-edit-btn-outside cursor-pointer shrink-0"
-                >
-                  <PencilIcon className="w-4 h-4" />
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={editingName ? commitNameEdit : startEditingName}
+                aria-label={editingName ? "Lưu tên" : "Chỉnh sửa tên"}
+                title={editingName ? "Lưu tên" : "Chỉnh sửa tên"}
+                className="vip-edit-btn-outside cursor-pointer shrink-0"
+              >
+                {editingName ? <CheckIcon className="w-4 h-4" /> : <PencilIcon className="w-4 h-4" />}
+              </button>
             </div>
           ) : activeTab === "music" ? (
             <div className="vip-name-frame inline-block">
@@ -1538,12 +1537,28 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
         {activeTab === "link" && (
           <div className="mt-5 bg-panel border border-border rounded-2xl">
-            <div className="sticky top-2 z-20 bg-panel rounded-t-2xl p-5 sm:p-6 pb-4 border-b border-border/60 shadow-sm shadow-black/5">
-              <p className="font-display font-bold text-lg mb-3 text-center" style={{ color: "#8b5fbf" }}>Lịch sử tạo link</p>
-              <div className="flex items-stretch gap-2 w-full">
-                <button
-                  type="button"
-                  onClick={() => handleHistoryTabChange("all")}
+            <button
+              type="button"
+              onClick={() => setHistoryOpen((v) => !v)}
+              aria-expanded={historyOpen}
+              className="sticky top-2 z-20 bg-panel rounded-t-2xl w-full text-left p-5 sm:p-6 pb-4 border-b border-border/60 shadow-sm shadow-black/5 cursor-pointer"
+            >
+              <span className="flex items-center justify-center gap-1.5 mb-3">
+                <span className="font-display font-bold text-lg text-center" style={{ color: "#8b5fbf" }}>Lịch sử tạo link</span>
+                <span style={{ color: "#8b5fbf" }}>
+                  <ChevronDownIcon
+                    className={`w-4 h-4 shrink-0 transition-transform ${historyOpen ? "rotate-180" : ""}`}
+                  />
+                </span>
+              </span>
+              <span className="flex items-stretch gap-2 w-full" onClick={(e) => e.stopPropagation()}>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    handleHistoryTabChange("all");
+                    setHistoryOpen(true);
+                  }}
                   className={`flex-1 px-4 py-2 rounded-full text-sm font-bold text-center transition-all cursor-pointer border-2 ${
                     historyTab === "all"
                       ? "bg-[#7dd3fc] border-[#38bdf8] text-white shadow-sm"
@@ -1551,10 +1566,14 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   }`}
                 >
                   Tất cả ({linkHistory.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleHistoryTabChange("favorite")}
+                </span>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    handleHistoryTabChange("favorite");
+                    setHistoryOpen(true);
+                  }}
                   className={`flex-1 px-4 py-2 rounded-full text-sm font-bold text-center transition-all cursor-pointer border-2 ${
                     historyTab === "favorite"
                       ? "bg-gradient-to-r from-[#ff5b6e] to-[#ff8a8a] border-[#ff5b6e] text-white shadow-md shadow-[#ff5b6e]/40"
@@ -1562,10 +1581,12 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   }`}
                 >
                   ❤️ Yêu thích ({historyFavoriteCount})
-                </button>
-              </div>
-            </div>
+                </span>
+              </span>
+            </button>
 
+            {historyOpen && (
+            <>
             {pagedHistory.length === 0 ? (
               <div className="px-6 pb-8 text-center">
                 <p className="text-muted text-sm">
@@ -1800,6 +1821,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   </div>
                 )}
               </>
+            )}
+            </>
             )}
           </div>
         )}
