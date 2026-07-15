@@ -34,18 +34,18 @@
 }
 
 html {
-  background: #f7f1ff;
+  background: #f6f0ff;
   overscroll-behavior-y: none;
 }
 
 body {
-  background: #f7f1ff;
+  background: #f6f0ff;
   color: var(--cream);
   overscroll-behavior-y: none;
   background-image:
-    radial-gradient(ellipse 900px 520px at 100% -8%, rgba(212, 175, 55, 0.14), transparent 60%),
-    radial-gradient(ellipse 700px 460px at -5% 105%, rgba(102, 52, 168, 0.12), transparent 55%),
-    linear-gradient(160deg, #f7f1ff 0%, #e7d3fb 45%, #d1abf0 100%);
+    radial-gradient(ellipse 900px 520px at 100% -8%, rgba(216, 180, 254, 0.55), transparent 60%),
+    radial-gradient(ellipse 700px 460px at -5% 105%, rgba(196, 148, 245, 0.4), transparent 55%),
+    linear-gradient(160deg, #faf6ff 0%, #e6d5fd 45%, #c9a3f5 100%);
   background-attachment: fixed;
 }
 
@@ -124,15 +124,15 @@ body {
   --danger: #d94f70;
   --highlight: #6634a8;
 
-  /* Bảng nền tím sang trọng hơn: tím sâu pha ánh vàng nhẹ ở góc trên, thay
-     vì tím pastel phẳng như trước. */
-  --bg-grad-1: #f7f1ff;
-  --bg-grad-2: #e7d3fb;
-  --bg-grad-3: #d1abf0;
+  /* Bảng nền tím nhạt sáng tươi — dùng chung cho cả trang đăng nhập lẫn
+     dashboard, tươi sáng và dịu mắt. */
+  --bg-grad-1: #faf6ff;
+  --bg-grad-2: #e6d5fd;
+  --bg-grad-3: #c9a3f5;
 
   background-image:
-    radial-gradient(ellipse 900px 520px at 100% -8%, rgba(212, 175, 55, 0.14), transparent 60%),
-    radial-gradient(ellipse 700px 460px at -5% 105%, rgba(102, 52, 168, 0.12), transparent 55%),
+    radial-gradient(ellipse 900px 520px at 100% -8%, rgba(216, 180, 254, 0.55), transparent 60%),
+    radial-gradient(ellipse 700px 460px at -5% 105%, rgba(196, 148, 245, 0.4), transparent 55%),
     linear-gradient(160deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 45%, var(--bg-grad-3) 100%);
   background-attachment: fixed;
   color: var(--cream);
@@ -234,20 +234,19 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Khung tên khách hàng (vd "Hello Bích") — viền xanh lá tĩnh (không
-   chạy sáng/nhấp nháy), nền sáng, chữ đậm màu xanh lá đậm nổi bật,
-   đồng bộ với logo thương hiệu.
+   Khung tên khách hàng (vd "Hello Bích") — viền cam tươi, nền
+   trắng sáng, chữ hồng nổi bật, tĩnh (không nhấp nháy/chạy sáng).
    ───────────────────────────────────────────────────────────── */
 .vip-name-frame {
   position: relative;
-  padding: 3px;
+  padding: 2px;
   border-radius: 18px;
-  background: linear-gradient(90deg, #16c261, #4ade80);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  background: linear-gradient(135deg, #ffb066 0%, #ff7a1a 50%, #ffb066 100%);
+  box-shadow: 0 8px 20px rgba(255, 122, 26, 0.28);
 }
 .vip-name-frame-inner {
-  border-radius: 15px;
-  background: var(--panel);
+  border-radius: 16px;
+  background: #ffffff;
   height: 100%;
   width: 100%;
   padding: 0.7rem 1.35rem;
@@ -260,7 +259,7 @@ body {
   font-style: normal;
   font-weight: 700;
   letter-spacing: 0.01em;
-  color: #0f8a45;
+  color: #ff2f8f;
 }
 .vip-name-input {
   font-family: var(--font-elegant), serif;
@@ -268,12 +267,12 @@ body {
   font-weight: 700;
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(15, 138, 69, 0.55);
-  color: #0f8a45;
+  border-bottom: 1px solid rgba(255, 47, 143, 0.4);
+  color: #ff2f8f;
   outline: none;
 }
 .vip-name-input:focus {
-  border-bottom-color: #0f8a45;
+  border-bottom-color: #ff2f8f;
 }
 .vip-edit-btn-outside {
   width: 34px;
@@ -293,6 +292,35 @@ body {
   transform: scale(1.06);
 }
 
+/* Khung 1 sản phẩm đã tạo link — viền bo tròn mềm mại, có đổ bóng nhẹ và
+   viền màu tím nhạt thay vì viền xám đơn điệu, đẹp mắt hơn. */
+.product-card {
+  border-radius: 18px;
+  border: 1.5px solid #e3cdf4;
+  background: var(--surface);
+  box-shadow: 0 4px 16px rgba(139, 95, 191, 0.10);
+}
+
+/* Khung chung bao ngoài danh sách nhiều sản phẩm khi tạo nhiều link cùng
+   lúc — tách biệt trực quan với khối bên trên. */
+.product-list-frame {
+  border-radius: 20px;
+  border: 1.5px solid #f3c6de;
+  background: linear-gradient(180deg, #fff0f7, #fff8fb);
+  padding: 14px;
+}
+
+/* Khung nhỏ màu xanh nhạt bọc quanh mọi số tiền/hoa hồng hiển thị trong
+   app (hoa hồng ước tính, hoa hồng, sau thuế, số dư ví...) — đồng bộ 1
+   kiểu nhấn mạnh số tiền ở mọi nơi. */
+.money-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #e3f3ff;
+  border: 1px solid #bfe3fb;
+  border-radius: 8px;
+  padding: 1px 8px;
+}
 /* Dòng cảnh báo "⚠️ Lưu ý quan trọng để được hoàn tiền" — nền vàng nhạt sáng,
    không viền. Tiêu đề + 5 gạch đầu dòng nằm chung 1 khối (không tách ô). */
 .notice-box {
@@ -305,12 +333,12 @@ body {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 10px;
   padding: 9px 14px;
   background: transparent;
   border: none;
-  text-align: left;
+  text-align: center;
 }
 /* Trạng thái chưa mở: không khung nền, chỉ là dòng chữ trơn — khung nền
    vàng chỉ xuất hiện khi bấm mở rộng (xem .notice-box ở trên). */
@@ -318,12 +346,12 @@ body {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 10px;
   padding: 4px 2px;
   background: transparent;
   border: none;
-  text-align: left;
+  text-align: center;
 }
 .notice-box-body {
   padding: 0 14px 12px;
@@ -358,7 +386,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   width: 25%;
 }
 .step-tracker-circle {
@@ -501,4 +529,3 @@ body {
 .music-avatar-ring.is-playing {
   animation-play-state: running;
 }
-

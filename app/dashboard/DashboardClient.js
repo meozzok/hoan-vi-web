@@ -1270,8 +1270,10 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         </div>
 
         {activeTab === "link" && (
-          <div className="bg-panel border border-border rounded-2xl p-6 sm:p-7">
-            <div className="rainbow-frame mb-5 inline-block w-full">
+          <div className="space-y-5">
+            {/* Khung độc lập: dòng nhắc "Tiền kiếm khó lắm..." — không còn
+                dùng chung khung lớn với ô tạo link bên dưới nữa. */}
+            <div className="rainbow-frame inline-block w-full">
               <div className="rainbow-frame-inner px-4 py-2.5">
                 <p className="text-highlight text-sm font-bold text-center">
                   Tiền kiếm khó lắm. Nhớ tiết kiệm nhé!
@@ -1279,8 +1281,9 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </div>
             </div>
 
-            {/* Khung gộp: từ nút chọn chế độ đến dòng lưu ý quan trọng — đóng thành 1 khối */}
-            <div className="rounded-2xl border-2 border-border/70 p-4 sm:p-5">
+            {/* Khung độc lập của chính nó: từ nút chọn chế độ đến dòng lưu ý
+                quan trọng — tách hẳn khỏi khung nhắc nhở tiết kiệm ở trên. */}
+            <div className="bg-panel border border-border rounded-2xl p-5 sm:p-6">
               {/* Chọn chế độ: tạo 1 link hoặc nhiều link cùng lúc (tối đa 10 link) */}
               <div className="flex items-center justify-between gap-3 mb-4">
                 <button
@@ -1333,12 +1336,12 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     <div className="relative">
                       <textarea
                         required
-                        rows={3}
+                        rows={4}
                         value={multiUrlsText}
                         onChange={(e) => setMultiUrlsText(e.target.value)}
                         onPaste={handleMultiPaste}
-                        placeholder="Dán link sản phẩm vào đây!"
-                        className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-14 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60 resize-y"
+                        placeholder={"Dán link sản phẩm vào đây!\n(Mỗi link 1 dòng, tối đa 10 link)"}
+                        className="w-full bg-surface border border-border rounded-lg pl-3.5 pr-14 py-3 text-base sm:text-sm outline-none focus:border-gold transition-colors placeholder:text-muted/60 placeholder:leading-relaxed resize-y"
                       />
                       <button
                         type="button"
@@ -1415,7 +1418,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             )}
 
             {batchResults.length > 0 && (
-              <div className="mt-5 space-y-3">
+              <div className={batchResults.length > 1 ? "mt-5 product-list-frame" : "mt-5"}>
+                <div className="space-y-3">
                 {batchResults.map((r, idx) => {
                   if (r.status === "error") {
                     return (
@@ -1436,7 +1440,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   return (
                     <div
                       key={r.key}
-                      className="relative bg-surface border border-border rounded-lg p-4"
+                      className="product-card relative p-4"
                     >
                       {/* Dòng "Lưu ý quan trọng để được hoàn tiền" nằm riêng 1
                           hàng, tách biệt khỏi tên sản phẩm/nút yêu thích. */}
@@ -1490,7 +1494,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                           </div>
                           <p className="text-xs mt-0.5">
                             <span className="text-danger">Hoa hồng ước tính:</span>{" "}
-                            <span className="font-bold font-mono-num" style={{ color: ESTIMATE_GREEN }}>
+                            <span className="money-chip font-bold font-mono-num" style={{ color: ESTIMATE_GREEN }}>
                               {item.commissionStr}
                             </span>
                           </p>
@@ -1516,6 +1520,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                     </div>
                   );
                 })}
+                </div>
               </div>
             )}
           </div>
@@ -1526,13 +1531,13 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             lắm..." / khung tạo link ở trên, tự ẩn khi đã tạo link thành công.
             Cách đều và cách xa cả khung trên lẫn khung "Lịch sử tạo link". */}
         {activeTab === "link" && batchSuccessCount === 0 && (
-          <div className="mt-10 mb-10">
+          <div className="mt-5 mb-5">
             <CtaStepTracker />
           </div>
         )}
 
         {activeTab === "link" && (
-          <div className="mt-10 bg-panel border border-border rounded-2xl">
+          <div className="mt-5 bg-panel border border-border rounded-2xl">
             <div className="sticky top-2 z-20 bg-panel rounded-t-2xl p-5 sm:p-6 pb-4 border-b border-border/60 shadow-sm shadow-black/5">
               <p className="font-display font-bold text-lg mb-3 text-center" style={{ color: "#8b5fbf" }}>Lịch sử tạo link</p>
               <div className="flex items-stretch gap-2 w-full">
@@ -2073,9 +2078,11 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
           <div className="ticket-notch bg-panel border border-border rounded-2xl overflow-hidden max-w-md">
             <div className="p-6 sm:p-7">
               <p className="text-xs text-muted uppercase tracking-widest mb-2">Có sẵn để rút</p>
-              <p className="font-display font-bold text-4xl text-[#16c261] tabular-nums">
-                {wallet ? formatVnd(wallet.coTheRutHien) : "—"}
-              </p>
+              <div className="inline-block border border-[#8fe0b0] bg-[#e9fbf1] rounded-xl px-4 py-2.5">
+                <p className="font-display font-bold text-4xl text-[#16c261] tabular-nums">
+                  {wallet ? formatVnd(wallet.coTheRutHien) : "—"}
+                </p>
+              </div>
 
               {wallet && (
                 <div className="mt-4 space-y-3">
@@ -2147,7 +2154,15 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             {wallet && (
               <>
                 <div className="ticket-dashed" />
-                <div className="p-6 sm:p-7 grid grid-cols-2 gap-4">
+                <div className="px-6 sm:px-7 pt-4">
+                  <p
+                    className="inline-flex items-center justify-center w-full bg-[#fff4b8] border border-[#f5c944] text-[#8a6412] font-bold rounded-full px-3 py-1.5 text-center whitespace-nowrap overflow-hidden"
+                    style={{ fontSize: "clamp(8px, 2.6vw, 12px)" }}
+                  >
+                    💡Hoa hồng ở &gt;Đã hoàn thành&lt; sẽ chuyển qua &gt;Có sẵn để rút&lt; sau 1 ngày
+                  </p>
+                </div>
+                <div className="p-6 sm:p-7 pt-4 grid grid-cols-2 gap-4">
                   <div className="border border-border rounded-xl px-3.5 py-3">
                     <p className="text-xs text-muted mb-1">🟡 Tổng hoa hồng</p>
                     <p className="font-mono-num text-lg font-bold text-[#eab308]">
@@ -2168,7 +2183,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   <div className="border border-border rounded-xl px-3.5 py-3">
                     <p className="text-xs text-muted mb-1">🟢 Đã hoàn thành</p>
                     <p className="font-mono-num text-lg font-bold text-[#16c261]">
-                      {formatVnd(wallet.coTheRutHien)}
+                      {formatVnd(wallet.hoanThanhChuaRut)}
                     </p>
                   </div>
                   <div className="border border-border rounded-xl px-3.5 py-3">
@@ -2226,14 +2241,14 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
           ) : (
             <p className="text-[11px] text-muted">
               Liên hệ hỗ trợ:{" "}
-              <a
-                href="https://zalo.me/0902431867"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#3f95b0] font-bold hover:underline"
-              >
-                Zalo (0902431867)
-              </a>
+            <a
+              href="https://zalo.me/0902431867"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#3f95b0] font-bold hover:underline"
+            >
+              Zalo (0902431867)
+            </a>
             </p>
           )}
         </div>
