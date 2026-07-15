@@ -1344,7 +1344,15 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
       </header>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 pb-28 sm:pb-10">
-        <div className={activeTab === "orders" ? "mb-4" : "mb-8"}>
+        <div
+          className={
+            activeTab === "orders"
+              ? "mb-4"
+              : activeTab === "music"
+              ? "mb-8 sticky top-[68px] z-30"
+              : "mb-8"
+          }
+        >
           {activeTab === "orders" ? null : headerIsRainbow ? (
             <div className="rainbow-frame inline-block">
               <div className="rainbow-frame-inner px-5 py-3">
@@ -1389,7 +1397,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </button>
             </div>
           ) : activeTab === "music" ? (
-            <div className="vip-name-frame inline-block sticky top-[68px] z-30 sticky-blur-bg rounded-[18px] py-1">
+            <div className="vip-name-frame inline-block sticky-blur-bg rounded-[18px] p-1">
               <div className="vip-name-frame-inner">
                 <h1 className="vip-name-text text-2xl sm:text-3xl tracking-tight">
                   {headerTitle}
