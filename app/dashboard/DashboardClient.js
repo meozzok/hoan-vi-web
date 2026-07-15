@@ -1547,7 +1547,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               aria-expanded={historyOpen}
               className={
                 historyOpen
-                  ? "sticky top-2 z-20 bg-panel rounded-t-2xl w-full text-left p-5 sm:p-6 pb-4 border-b border-border/60 shadow-sm shadow-black/5 cursor-pointer"
+                  ? "bg-panel rounded-t-2xl w-full text-left p-5 sm:p-6 pb-4 border-b border-border/60 shadow-sm shadow-black/5 cursor-pointer"
                   : "w-full flex justify-center cursor-pointer"
               }
             >
@@ -1601,7 +1601,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             </button>
 
             {historyOpen && (
-            <>
+            <div className="max-h-[65vh] overflow-y-auto overscroll-contain">
             {pagedHistory.length === 0 ? (
               <div className="px-6 pb-8 text-center">
                 <p className="text-muted text-sm">
@@ -1837,7 +1837,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 )}
               </>
             )}
-            </>
+            </div>
             )}
           </div>
         )}
