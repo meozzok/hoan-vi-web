@@ -1543,14 +1543,20 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               aria-expanded={historyOpen}
               className="sticky top-2 z-20 bg-panel rounded-t-2xl w-full text-left p-5 sm:p-6 pb-4 border-b border-border/60 shadow-sm shadow-black/5 cursor-pointer"
             >
-              <span className="flex items-center justify-center gap-1.5 mb-3">
-                <span className="font-display font-bold text-lg text-center" style={{ color: "#8b5fbf" }}>Lịch sử tạo link</span>
+              <span className={`flex items-center justify-center gap-1.5 ${historyOpen ? "mb-3" : ""}`}>
+                <span
+                  className="font-display font-bold text-lg text-center border border-[#8b5fbf]/40 rounded-full px-3 py-0.5"
+                  style={{ color: "#8b5fbf" }}
+                >
+                  Lịch sử tạo link
+                </span>
                 <span style={{ color: "#8b5fbf" }}>
                   <ChevronDownIcon
                     className={`w-4 h-4 shrink-0 transition-transform ${historyOpen ? "rotate-180" : ""}`}
                   />
                 </span>
               </span>
+              {historyOpen && (
               <span className="flex items-stretch gap-2 w-full" onClick={(e) => e.stopPropagation()}>
                 <span
                   role="button"
@@ -1583,6 +1589,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   ❤️ Yêu thích ({historyFavoriteCount})
                 </span>
               </span>
+              )}
             </button>
 
             {historyOpen && (
