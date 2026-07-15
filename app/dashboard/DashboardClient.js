@@ -127,6 +127,17 @@ function MusicTabIcon({ className = "" }) {
   );
 }
 
+function LeaderboardTabIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 21h8M12 17v4" />
+      <path d="M7 4h10v6a5 5 0 0 1-10 0V4Z" />
+      <path d="M7 6H4.5A1.5 1.5 0 0 0 3 7.5v0A3.5 3.5 0 0 0 6.5 11H7" />
+      <path d="M17 6h2.5A1.5 1.5 0 0 1 21 7.5v0A3.5 3.5 0 0 1 17.5 11H17" />
+    </svg>
+  );
+}
+
 function PlayIcon({ className = "" }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -568,8 +579,24 @@ const TABS = [
   { id: "link", label: "Tạo link", Icon: LinkTabIcon },
   { id: "orders", label: "Đơn hàng", Icon: OrdersTabIcon },
   { id: "wallet", label: "Ví Tiền", Icon: WalletTabIcon },
+  { id: "bxh", label: "BXH", Icon: LeaderboardTabIcon },
   { id: "music", label: "Music", Icon: MusicTabIcon },
 ];
+
+// Tên hạng theo thứ tự giảm dần cho tab BXH — top 5 có tên riêng, từ hạng 6
+// trở đi dùng chung 1 tên "Thân Thiết" (không lộ sub_id/danh tính cho ai).
+const RANK_TIERS = [
+  { rank: 1, name: "Kim Cương", emoji: "💎", color: "#38bdf8", glow: "rgba(56,189,248,0.35)" },
+  { rank: 2, name: "Bạch Kim", emoji: "🏆", color: "#5eead4", glow: "rgba(94,234,212,0.35)" },
+  { rank: 3, name: "Vàng", emoji: "🥇", color: "#eab308", glow: "rgba(234,179,8,0.35)" },
+  { rank: 4, name: "Bạc", emoji: "🥈", color: "#9ca3af", glow: "rgba(156,163,175,0.35)" },
+  { rank: 5, name: "Đồng", emoji: "🥉", color: "#c2703d", glow: "rgba(194,112,61,0.35)" },
+];
+const DEFAULT_TIER = { name: "Thân Thiết", emoji: "💗", color: "#8b5fbf", glow: "rgba(139,95,191,0.25)" };
+
+function rankTier(rank) {
+  return RANK_TIERS.find((t) => t.rank === rank) || DEFAULT_TIER;
+}
 
 // Danh sách bài nhạc hiển thị ở tab Music — file đặt trong public/music/.
 // requiredOrders: số đơn "Hoàn thành" cần có để mở khoá bài hát.
@@ -823,10 +850,18 @@ function saveLocalNickname(myId, name) {
   }
 }
 
-export default function DashboardClient({ user, initialOrders, initialWallet }) {
+export default function DashboardClient({
+  user,
+  initialOrders,
+  initialWallet,
+  initialLeaderboard,
+  initialMyRank,
+}) {
   const router = useRouter();
   const [orders] = useState(initialOrders || []);
   const [wallet] = useState(initialWallet);
+  const [leaderboard] = useState(initialLeaderboard || []);
+  const [myRank] = useState(initialMyRank || null);
   const [shopeeUrl, setShopeeUrl] = useState("");
   const [createMode, setCreateMode] = useState("single"); // "single" | "multi"
   const [multiUrlsText, setMultiUrlsText] = useState("");
@@ -871,6 +906,10 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   // Music: phân trang danh sách bài hát (10 bài / trang).
   const [musicPage, setMusicPage] = useState(1);
   const [musicPageWindowStart, setMusicPageWindowStart] = useState(0);
+
+  // BXH: phân trang danh sách hạng 6 trở đi (10 người / trang), top 5 hiển thị riêng ở trên.
+  const [bxhPage, setBxhPage] = useState(1);
+  const [bxhPageWindowStart, setBxhPageWindowStart] = useState(0);
 
   // Ví tiền: yêu cầu rút.
   const [withdrawAmount, setWithdrawAmount] = useState("");
@@ -1051,6 +1090,27 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
   function retreatMusicPageWindow() {
     setMusicPageWindowStart((w) => Math.max(0, w - PAGE_WINDOW));
+  }
+
+  // BXH: top 5 hiển thị riêng (podium), phần còn lại (hạng 6+) phân trang 10 người/trang.
+  const bxhTop5 = leaderboard.slice(0, 5);
+  const bxhRest = leaderboard.slice(5);
+  const bxhTotalPages = Math.max(1, Math.ceil(bxhRest.length / PAGE_SIZE));
+  const pagedBxhRest = useMemo(() => {
+    const start = (bxhPage - 1) * PAGE_SIZE;
+    return bxhRest.slice(start, start + PAGE_SIZE);
+  }, [bxhRest, bxhPage]);
+
+  function goToBxhPage(p) {
+    setBxhPage(p);
+  }
+
+  function advanceBxhPageWindow() {
+    setBxhPageWindowStart((w) => Math.min(w + PAGE_WINDOW, Math.max(0, bxhTotalPages - 1)));
+  }
+
+  function retreatBxhPageWindow() {
+    setBxhPageWindowStart((w) => Math.max(0, w - PAGE_WINDOW));
   }
 
   async function handlePasteUrl() {
@@ -1316,6 +1376,9 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   if (activeTab === "music") {
     headerTitle = "Hòa mình cùng âm nhạc";
   }
+  if (activeTab === "bxh") {
+    headerTitle = "Bảng Xếp Hạng";
+  }
 
   return (
     <main className={`login-pink theme-${theme} min-h-screen`}>
@@ -1348,7 +1411,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
           className={
             activeTab === "orders"
               ? "mb-4"
-              : activeTab === "music"
+              : activeTab === "music" || activeTab === "bxh"
               ? "mb-8 sticky top-[68px] z-30"
               : "mb-8"
           }
@@ -1401,6 +1464,14 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               <div className="vip-name-frame-inner">
                 <h1 className="vip-name-text text-2xl sm:text-3xl tracking-tight">
                   {headerTitle}
+                </h1>
+              </div>
+            </div>
+          ) : activeTab === "bxh" ? (
+            <div className="vip-name-frame inline-block sticky-blur-bg rounded-[18px] p-1">
+              <div className="vip-name-frame-inner">
+                <h1 className="vip-name-text text-2xl sm:text-3xl tracking-tight">
+                  {headerTitle} <span>🏆</span>
                 </h1>
               </div>
             </div>
@@ -2461,6 +2532,160 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 <span className="text-xs text-muted ml-2 font-mono-num">
                   Trang {musicPage}/{musicTotalPages}
                 </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "bxh" && (
+          <div className="max-w-md space-y-4">
+            {/* Vị trí của bạn */}
+            <div className="bg-panel border border-border rounded-2xl p-5 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted uppercase tracking-widest mb-1">Vị trí của bạn</p>
+                <p
+                  className="font-display text-xl font-bold"
+                  style={{ color: myRank ? rankTier(myRank).color : undefined }}
+                >
+                  {myRank ? `Hạng ${myRank} — ${rankTier(myRank).name}` : "Chưa lọt Top 100"}
+                </p>
+              </div>
+              <span className="text-3xl leading-none">{myRank ? rankTier(myRank).emoji : "🙈"}</span>
+            </div>
+
+            {/* Top 5 — sếp trên cao, nhìn đẳng cấp */}
+            {bxhTop5.length > 0 && (
+              <div className="bg-panel border border-border rounded-2xl p-5 sm:p-6">
+                <p className="text-xs text-muted uppercase tracking-widest mb-4">Top 5 đẳng cấp</p>
+                <div className="space-y-3">
+                  {bxhTop5.map((entry) => {
+                    const tier = rankTier(entry.rank);
+                    return (
+                      <div
+                        key={entry.rank}
+                        className="flex items-center gap-3 rounded-2xl border p-4 shadow-sm"
+                        style={{
+                          borderColor: tier.color,
+                          background: `linear-gradient(135deg, ${tier.glow}, transparent)`,
+                          transform: entry.rank === 1 ? "scale(1.04)" : undefined,
+                        }}
+                      >
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center text-2xl shrink-0"
+                          style={{ background: tier.glow, border: `2px solid ${tier.color}` }}
+                        >
+                          {tier.emoji}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] text-muted">Hạng {entry.rank}</p>
+                          <p className="font-display font-bold text-base flex items-center gap-1.5" style={{ color: tier.color }}>
+                            {tier.name}
+                            {entry.isMe && (
+                              <span className="text-[10px] font-semibold bg-highlight text-white rounded-full px-2 py-0.5">
+                                Bạn
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <p className="font-mono-num font-bold text-sm shrink-0" style={{ color: tier.color }}>
+                          {formatVnd(entry.total)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Hạng 6 trở đi — Thân Thiết, không lộ sub_id */}
+            {bxhRest.length > 0 && (
+              <div className="bg-panel border border-border rounded-2xl p-5 sm:p-6">
+                <p className="text-xs text-muted uppercase tracking-widest mb-4">
+                  Hạng 6 trở lên — Thân Thiết
+                </p>
+                <div className="space-y-2">
+                  {pagedBxhRest.map((entry) => (
+                    <div
+                      key={entry.rank}
+                      className={`flex items-center gap-3 rounded-xl border px-3.5 py-2.5 ${
+                        entry.isMe ? "border-highlight bg-[#f3ecff]" : "border-border"
+                      }`}
+                    >
+                      <span className="w-8 text-center font-mono-num text-xs font-bold text-muted shrink-0">
+                        #{entry.rank}
+                      </span>
+                      <span className="text-lg shrink-0">{DEFAULT_TIER.emoji}</span>
+                      <span
+                        className="flex-1 text-sm font-semibold flex items-center gap-1.5"
+                        style={{ color: DEFAULT_TIER.color }}
+                      >
+                        Thân Thiết
+                        {entry.isMe && (
+                          <span className="text-[10px] font-semibold bg-highlight text-white rounded-full px-2 py-0.5">
+                            Bạn
+                          </span>
+                        )}
+                      </span>
+                      <span className="font-mono-num text-sm font-bold text-muted shrink-0">
+                        {formatVnd(entry.total)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Phân trang: tối đa 5 số trang mỗi lượt, mỗi trang 10 người */}
+                {bxhTotalPages > 1 && (
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 pt-5 mt-2 border-t border-border">
+                    {bxhPageWindowStart > 0 && (
+                      <button
+                        type="button"
+                        onClick={retreatBxhPageWindow}
+                        className="w-8 h-8 rounded-full text-xs font-semibold text-muted hover:text-cream border border-border cursor-pointer"
+                        aria-label="Trang trước đó"
+                      >
+                        ‹
+                      </button>
+                    )}
+                    {Array.from({
+                      length: Math.min(PAGE_WINDOW, bxhTotalPages - bxhPageWindowStart),
+                    }).map((_, i) => {
+                      const p = bxhPageWindowStart + i + 1;
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => goToBxhPage(p)}
+                          className={`w-8 h-8 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
+                            bxhPage === p
+                              ? "bg-highlight text-white"
+                              : "text-muted hover:text-cream border border-border"
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                    {bxhPageWindowStart + PAGE_WINDOW < bxhTotalPages && (
+                      <button
+                        type="button"
+                        onClick={advanceBxhPageWindow}
+                        className="w-8 h-8 rounded-full text-xs font-semibold text-muted hover:text-cream border border-border cursor-pointer"
+                        aria-label="Xem thêm trang"
+                      >
+                        ›...
+                      </button>
+                    )}
+                    <span className="text-xs text-muted ml-2 font-mono-num">
+                      Trang {bxhPage}/{bxhTotalPages}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {leaderboard.length === 0 && (
+              <div className="bg-panel border border-border rounded-2xl p-6 text-center text-sm text-muted">
+                Chưa có dữ liệu xếp hạng.
               </div>
             )}
           </div>
