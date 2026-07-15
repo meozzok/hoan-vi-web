@@ -1494,7 +1494,11 @@ export default function DashboardClient({
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 rounded-full font-semibold transition-all cursor-pointer ${
                   isFeatured
-                    ? "px-5 py-2.5 text-base scale-110 bg-highlight text-white shadow-lg shadow-highlight/40"
+                    ? `px-5 py-2.5 text-base scale-110 shadow-lg ${
+                        activeTab === tab.id
+                          ? "bg-highlight text-white shadow-highlight/40"
+                          : "bg-highlight/35 text-highlight shadow-highlight/10 hover:bg-highlight/50"
+                      }`
                     : `px-4 py-2 text-sm ${
                         activeTab === tab.id
                           ? "bg-highlight text-white shadow-sm"
@@ -2746,8 +2750,10 @@ export default function DashboardClient({
             >
               {isFeatured ? (
                 <span
-                  className={`relative -mt-7 flex items-center justify-center w-14 h-14 rounded-full border-4 border-panel shadow-lg shadow-highlight/40 transition-transform ${
-                    activeTab === tab.id ? "bg-highlight text-white scale-105" : "bg-highlight text-white"
+                  className={`relative -mt-7 flex items-center justify-center w-14 h-14 rounded-full border-4 border-panel shadow-lg transition-all ${
+                    activeTab === tab.id
+                      ? "bg-highlight text-white scale-105 shadow-highlight/40"
+                      : "bg-highlight/35 text-highlight shadow-highlight/10"
                   }`}
                 >
                   <tab.Icon className="w-6 h-6" />
@@ -2755,7 +2761,7 @@ export default function DashboardClient({
               ) : (
                 <tab.Icon className="w-5 h-5" />
               )}
-              <span className={isFeatured ? `mt-1 ${activeTab === tab.id ? "text-highlight" : "text-cream"}` : ""}>
+              <span className={isFeatured ? `mt-1 ${activeTab === tab.id ? "text-highlight" : "text-muted"}` : ""}>
                 {tab.label}
               </span>
             </button>
