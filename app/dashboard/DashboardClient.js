@@ -8,7 +8,7 @@ import { DEFAULT_THEME, getStoredTheme } from "../../lib/theme";
 const ZALO_GROUP_LINK = "https://zalo.me/g/msd7vvhjcwiffr3tyqor";
 
 const PAGE_SIZE = 10;
-const PAGE_WINDOW = 10;
+const PAGE_WINDOW = 5;
 
 // Bot dùng chữ trạng thái tự do (vd "Hoàn thành", "Chờ xử lý", "Đã huỷ"...)
 // nên map theo từ khoá thay vì enum cố định, phòng khi bot đổi cách gọi.
@@ -639,6 +639,134 @@ const MUSIC_TRACKS = [
     sourceUrl: "",
     requiredOrders: 30,
   },
+  {
+    id: "bai-9",
+    title: "Chiếc Khăn Gió Ấm - VALANCHE Cover",
+    src: "/music/bai-9.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 40,
+  },
+  {
+    id: "bai-10",
+    title: "Siêu Cô Đơn - Yan Nguyễn",
+    src: "/music/bai-10.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 50,
+  },
+  {
+    id: "bai-11",
+    title: "Mùa Đông Không Lạnh - Akira Phan",
+    src: "/music/bai-11.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 65,
+  },
+  {
+    id: "bai-12",
+    title: "Đoạn Đường Vắng - Nhật Kim Anh",
+    src: "/music/bai-12.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 80,
+  },
+  {
+    id: "bai-13",
+    title: "Quên Cách Yêu - Lương Bích Hữu",
+    src: "/music/bai-13.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 100,
+  },
+  {
+    id: "bai-14",
+    title: "Thấm Thía - Tống Gia Vỹ",
+    src: "/music/bai-14.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 120,
+  },
+  {
+    id: "bai-15",
+    title: "Một Đường Nở Hoa - Ôn Dịch Tâm",
+    src: "/music/bai-15.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 140,
+  },
+  {
+    id: "bai-16",
+    title: "Ai Chung Tình Được Mãi - Thương Võ Cover",
+    src: "/music/bai-16.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 170,
+  },
+  {
+    id: "bai-17",
+    title: "Tự Em Sai - Linh Hương Luz",
+    src: "/music/bai-17.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 200,
+  },
+  {
+    id: "bai-18",
+    title: "Gặp Mẹ Trong Mơ - Thùy Chi",
+    src: "/music/bai-18.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 230,
+  },
+  {
+    id: "bai-19",
+    title: "Ai Thật Lòng Thương Em - Lý Tuấn Kiệt",
+    src: "/music/bai-19.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 260,
+  },
+  {
+    id: "bai-20",
+    title: "Không Còn Nợ Nhau - Wendy Thảo",
+    src: "/music/bai-20.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 300,
+  },
+  {
+    id: "bai-21",
+    title: "Hẹn Hò Nhưng Không Yêu - Wendy Thảo",
+    src: "/music/bai-21.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 345,
+  },
+  {
+    id: "bai-22",
+    title: "Anh Thôi Nhân Nhượng - Kiều Chi Cover",
+    src: "/music/bai-22.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 400,
+  },
+  {
+    id: "bai-23",
+    title: "Cô Đơn Sẽ Tốt Hơn - Kiều Mini Cover",
+    src: "/music/bai-23.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 450,
+  },
+  {
+    id: "bai-24",
+    title: "Mẹ Yêu Ơi - Gia Khiêm Cover",
+    src: "/music/bai-24.mp3",
+    cover: "/music/hoan-tien-avatar.png",
+    sourceUrl: "",
+    requiredOrders: 500,
+  },
 ];
 
 // Tối đa 10 link được tạo trong 1 lần dùng chế độ "Tạo nhiều link".
@@ -739,6 +867,10 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
   const [statusFilter, setStatusFilter] = useState("all");
   const [orderPage, setOrderPage] = useState(1);
   const [pageWindowStart, setPageWindowStart] = useState(0);
+
+  // Music: phân trang danh sách bài hát (10 bài / trang).
+  const [musicPage, setMusicPage] = useState(1);
+  const [musicPageWindowStart, setMusicPageWindowStart] = useState(0);
 
   // Ví tiền: yêu cầu rút.
   const [withdrawAmount, setWithdrawAmount] = useState("");
@@ -897,6 +1029,28 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
 
   function retreatPageWindow() {
     setPageWindowStart((w) => Math.max(0, w - PAGE_WINDOW));
+  }
+
+  // Music: 10 bài / trang, giữ nguyên thứ tự mốc đơn tăng dần (bài dễ mở khoá trước).
+  const musicTotalPages = Math.max(1, Math.ceil(MUSIC_TRACKS.length / PAGE_SIZE));
+  const pagedMusicTracks = useMemo(() => {
+    const start = (musicPage - 1) * PAGE_SIZE;
+    return MUSIC_TRACKS.slice(start, start + PAGE_SIZE).map((track, i) => ({
+      track,
+      absoluteIndex: start + i,
+    }));
+  }, [musicPage]);
+
+  function goToMusicPage(p) {
+    setMusicPage(p);
+  }
+
+  function advanceMusicPageWindow() {
+    setMusicPageWindowStart((w) => Math.min(w + PAGE_WINDOW, Math.max(0, musicTotalPages - 1)));
+  }
+
+  function retreatMusicPageWindow() {
+    setMusicPageWindowStart((w) => Math.max(0, w - PAGE_WINDOW));
   }
 
   async function handlePasteUrl() {
@@ -1235,7 +1389,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
               </button>
             </div>
           ) : activeTab === "music" ? (
-            <div className="vip-name-frame inline-block">
+            <div className="vip-name-frame inline-block sticky top-[68px] z-30 sticky-blur-bg rounded-[18px] py-1">
               <div className="vip-name-frame-inner">
                 <h1 className="vip-name-text text-2xl sm:text-3xl tracking-tight">
                   {headerTitle}
@@ -2240,19 +2394,67 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 const firstLockedIdx = MUSIC_TRACKS.findIndex(
                   (t) => completedOrdersCount < (t.requiredOrders || 1)
                 );
-                return MUSIC_TRACKS.map((track, idx) => (
+                return pagedMusicTracks.map(({ track, absoluteIndex }) => (
                   <MusicTrackCard
                     key={track.id}
                     track={track}
-                    index={idx}
+                    index={absoluteIndex}
                     completedOrders={completedOrdersCount}
                     nowPlayingId={nowPlayingId}
                     onRequestPlay={setNowPlayingId}
-                    blurRequirement={firstLockedIdx !== -1 && idx > firstLockedIdx}
+                    blurRequirement={firstLockedIdx !== -1 && absoluteIndex > firstLockedIdx}
                   />
                 ));
               })()}
             </div>
+
+            {/* Phân trang: tối đa 5 số trang mỗi lượt, mỗi trang 10 bài */}
+            {musicTotalPages > 1 && (
+              <div className="flex flex-wrap items-center justify-center gap-1.5 pt-5 mt-2 border-t border-border">
+                {musicPageWindowStart > 0 && (
+                  <button
+                    type="button"
+                    onClick={retreatMusicPageWindow}
+                    className="w-8 h-8 rounded-full text-xs font-semibold text-muted hover:text-cream border border-border cursor-pointer"
+                    aria-label="Trang trước đó"
+                  >
+                    ‹
+                  </button>
+                )}
+                {Array.from({
+                  length: Math.min(PAGE_WINDOW, musicTotalPages - musicPageWindowStart),
+                }).map((_, i) => {
+                  const p = musicPageWindowStart + i + 1;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => goToMusicPage(p)}
+                      className={`w-8 h-8 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
+                        musicPage === p
+                          ? "bg-highlight text-white"
+                          : "text-muted hover:text-cream border border-border"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+                {musicPageWindowStart + PAGE_WINDOW < musicTotalPages && (
+                  <button
+                    type="button"
+                    onClick={advanceMusicPageWindow}
+                    className="w-8 h-8 rounded-full text-xs font-semibold text-muted hover:text-cream border border-border cursor-pointer"
+                    aria-label="Xem thêm trang"
+                  >
+                    ›...
+                  </button>
+                )}
+                <span className="text-xs text-muted ml-2 font-mono-num">
+                  Trang {musicPage}/{musicTotalPages}
+                </span>
+              </div>
+            )}
           </div>
         )}
 
