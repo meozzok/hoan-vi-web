@@ -1189,47 +1189,8 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
         </div>
       </header>
 
-      {activeTab === "link" && (
-        <div className="sticky top-16 z-30 sticky-blur-bg">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-2.5">
-            <div className="vip-name-frame inline-block">
-              <div className="vip-name-frame-inner">
-                {editingName ? (
-                  <input
-                    autoFocus
-                    type="text"
-                    value={nameInput}
-                    maxLength={30}
-                    onChange={(e) => setNameInput(e.target.value)}
-                    onBlur={commitNameEdit}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") commitNameEdit();
-                      if (e.key === "Escape") cancelNameEdit();
-                    }}
-                    className="vip-name-input text-xl sm:text-2xl px-1 py-0.5 w-36 sm:w-52"
-                  />
-                ) : (
-                  <h1 className="vip-name-text text-2xl sm:text-3xl tracking-tight">
-                    {headerTitle} <span>🌷</span>
-                  </h1>
-                )}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={editingName ? commitNameEdit : startEditingName}
-              aria-label={editingName ? "Lưu tên" : "Chỉnh sửa tên"}
-              title={editingName ? "Lưu tên" : "Chỉnh sửa tên"}
-              className="vip-edit-btn-outside cursor-pointer shrink-0"
-            >
-              {editingName ? <CheckIcon className="w-4 h-4" /> : <PencilIcon className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 pb-28 sm:pb-10">
-        <div className={activeTab === "link" ? "" : activeTab === "orders" ? "mb-4" : "mb-8"}>
+        <div className={activeTab === "orders" ? "mb-4" : "mb-8"}>
           {activeTab === "orders" ? null : headerIsRainbow ? (
             <div className="rainbow-frame inline-block">
               <div className="rainbow-frame-inner px-5 py-3">
@@ -1238,7 +1199,42 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 </h1>
               </div>
             </div>
-          ) : activeTab === "link" ? null : activeTab === "music" ? (
+          ) : activeTab === "link" ? (
+            <div className="flex items-center gap-2.5">
+              <div className="vip-name-frame inline-block">
+                <div className="vip-name-frame-inner">
+                  {editingName ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      value={nameInput}
+                      maxLength={30}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      onBlur={commitNameEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitNameEdit();
+                        if (e.key === "Escape") cancelNameEdit();
+                      }}
+                      className="vip-name-input text-xl sm:text-2xl px-1 py-0.5 w-36 sm:w-52"
+                    />
+                  ) : (
+                    <h1 className="vip-name-text text-2xl sm:text-3xl tracking-tight">
+                      {headerTitle} <span>🌷</span>
+                    </h1>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={editingName ? commitNameEdit : startEditingName}
+                aria-label={editingName ? "Lưu tên" : "Chỉnh sửa tên"}
+                title={editingName ? "Lưu tên" : "Chỉnh sửa tên"}
+                className="vip-edit-btn-outside cursor-pointer shrink-0"
+              >
+                {editingName ? <CheckIcon className="w-4 h-4" /> : <PencilIcon className="w-4 h-4" />}
+              </button>
+            </div>
+          ) : activeTab === "music" ? (
             <div className="vip-name-frame inline-block">
               <div className="vip-name-frame-inner">
                 <h1 className="vip-name-text text-2xl sm:text-3xl tracking-tight">
@@ -1601,7 +1597,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
             </button>
 
             {historyOpen && (
-            <div className="max-h-[65vh] overflow-y-auto overscroll-contain">
+            <>
             {pagedHistory.length === 0 ? (
               <div className="px-6 pb-8 text-center">
                 <p className="text-muted text-sm">
@@ -1837,7 +1833,7 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                 )}
               </>
             )}
-            </div>
+            </>
             )}
           </div>
         )}
