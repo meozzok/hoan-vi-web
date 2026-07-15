@@ -1551,9 +1551,9 @@ export default function DashboardClient({ user, initialOrders, initialWallet }) 
                   : "w-full flex justify-center cursor-pointer"
               }
             >
-              <span className={`flex items-center justify-center gap-1.5 ${historyOpen ? "mb-3" : "bg-panel border border-border rounded-full px-4 py-2 shadow-sm shadow-black/5"}`}>
+              <span className={`flex items-center justify-center gap-1.5 ${historyOpen ? "mb-3" : "bg-panel border border-[#8b5fbf]/40 rounded-full px-4 py-2 shadow-sm shadow-black/5"}`}>
                 <span
-                  className="font-display font-bold text-lg text-center border border-[#8b5fbf]/40 rounded-full px-3 py-0.5"
+                  className="font-display font-bold text-lg text-center"
                   style={{ color: "#8b5fbf" }}
                 >
                   Lịch sử tạo link
