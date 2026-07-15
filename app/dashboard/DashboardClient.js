@@ -178,13 +178,7 @@ function formatTrackTime(seconds) {
 // là avatar tròn có nút bật/tắt, viền SVG (gradient hồng-đỏ) vẽ theo tiến
 // trình phát và tự xoay ngược chiều với avatar. Bài hát bị khoá nếu khách
 // chưa đủ số đơn hoàn thành theo yêu cầu — không thể bấm phát hay tua.
-function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequestPlay, blurRequirement }) {
-  const audioRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0); // 0-100
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-
+function MusicTrackCard({ track, index, completedOrders, isActive, isPlaying, progress, currentTime, duration, onToggle, onSeek, blurRequirement }) {
   const RADIUS = 27;
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
   const RING_BG_COLOR = "#ec4899"; // hồng — vòng nền, giống nhau ở mọi bài
@@ -195,34 +189,21 @@ function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequest
   const isLocked = completedOrders < required;
   const badgeColor = isLocked ? "#9ca3af" : "#16c261";
 
-  // Có bài khác đang phát (không phải bài này) → tự dừng bài này lại, đảm bảo
-  // chỉ 1 bài phát cùng lúc trong toàn bộ danh sách.
-  useEffect(() => {
-    if (nowPlayingId && nowPlayingId !== track.id && audioRef.current && !audioRef.current.paused) {
-      audioRef.current.pause();
-    }
-  }, [nowPlayingId, track.id]);
+  // Chỉ hiển thị tiến trình/thời gian phát của bài đang thực sự phát (isActive);
+  // các bài khác luôn hiện ở trạng thái 0 dù có phát nhạc ở nơi khác hay không.
+  const shownProgress = isActive ? progress : 0;
+  const shownCurrentTime = isActive ? currentTime : 0;
+  const shownDuration = isActive ? duration : 0;
+  const shownIsPlaying = isActive && isPlaying;
 
   function togglePlay() {
     if (isLocked) return;
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (isPlaying) {
-      audio.pause();
-    } else {
-      onRequestPlay(track.id);
-      audio.play().catch(() => {});
-    }
+    onToggle(track);
   }
 
   function handleSeek(e) {
-    if (isLocked) return;
-    const audio = audioRef.current;
-    if (!audio || !duration) return;
-    const value = Number(e.target.value);
-    audio.currentTime = value;
-    setCurrentTime(value);
-    setProgress((value / duration) * 100);
+    if (isLocked || !isActive) return;
+    onSeek(Number(e.target.value));
   }
 
   return (
@@ -272,7 +253,7 @@ function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequest
             strokeWidth="3.5"
             strokeLinecap="round"
             strokeDasharray={CIRCUMFERENCE}
-            strokeDashoffset={CIRCUMFERENCE * (1 - progress / 100)}
+            strokeDashoffset={CIRCUMFERENCE * (1 - shownProgress / 100)}
             transform="rotate(-90 32 32)"
           />
         </svg>
@@ -281,7 +262,7 @@ function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequest
           src={track.cover}
           alt={track.title}
           className={`absolute inset-[7px] w-[50px] h-[50px] rounded-full object-cover music-avatar-art${
-            isPlaying ? " is-playing" : ""
+            shownIsPlaying ? " is-playing" : ""
           }${isLocked ? " grayscale" : ""}`}
         />
 
@@ -289,8 +270,8 @@ function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequest
           type="button"
           onClick={togglePlay}
           disabled={isLocked}
-          aria-label={isLocked ? "Bài hát đang bị khoá" : isPlaying ? "Tạm dừng" : "Phát nhạc"}
-          title={isLocked ? "Hoàn thành đủ đơn để mở khoá" : isPlaying ? "Tạm dừng" : "Phát nhạc"}
+          aria-label={isLocked ? "Bài hát đang bị khoá" : shownIsPlaying ? "Tạm dừng" : "Phát nhạc"}
+          title={isLocked ? "Hoàn thành đủ đơn để mở khoá" : shownIsPlaying ? "Tạm dừng" : "Phát nhạc"}
           className={`absolute inset-0 flex items-center justify-center group ${
             isLocked ? "cursor-not-allowed" : "cursor-pointer"
           }`}
@@ -298,34 +279,13 @@ function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequest
           <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-black/45 text-white backdrop-blur-sm group-hover:bg-black/60 transition-colors">
             {isLocked ? (
               <LockIcon className="w-3.5 h-3.5" />
-            ) : isPlaying ? (
+            ) : shownIsPlaying ? (
               <PauseIcon className="w-3.5 h-3.5" />
             ) : (
               <PlayIcon className="w-3.5 h-3.5 ml-0.5" />
             )}
           </span>
         </button>
-
-        <audio
-          ref={audioRef}
-          src={track.src}
-          preload="none"
-          onPlay={() => {
-            setIsPlaying(true);
-            onRequestPlay(track.id);
-          }}
-          onPause={() => setIsPlaying(false)}
-          onEnded={() => setIsPlaying(false)}
-          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
-          onTimeUpdate={(e) => {
-            const audio = e.currentTarget;
-            setCurrentTime(audio.currentTime || 0);
-            if (audio.duration) {
-              setProgress((audio.currentTime / audio.duration) * 100);
-            }
-          }}
-          className="hidden"
-        />
       </div>
 
       <div className="min-w-0 flex-1">
@@ -350,17 +310,17 @@ function MusicTrackCard({ track, index, completedOrders, nowPlayingId, onRequest
         <input
           type="range"
           min={0}
-          max={duration || 0}
+          max={shownDuration || 0}
           step={0.1}
-          value={currentTime}
+          value={shownCurrentTime}
           onChange={handleSeek}
-          disabled={isLocked || !duration}
+          disabled={isLocked || !shownDuration}
           className="w-full mt-2 accent-[#ef4444] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         />
 
         <div className="flex items-center justify-between">
-          <p className="text-[11px] text-muted font-mono-num">{formatTrackTime(currentTime)}</p>
-          <p className="text-[11px] text-muted font-mono-num">{formatTrackTime(duration)}</p>
+          <p className="text-[11px] text-muted font-mono-num">{formatTrackTime(shownCurrentTime)}</p>
+          <p className="text-[11px] text-muted font-mono-num">{formatTrackTime(shownDuration)}</p>
         </div>
       </div>
     </div>
@@ -1029,9 +989,46 @@ export default function DashboardClient({
     [orders]
   );
 
-  // Bài đang phát ở tab Music (id) — chỉ 1 bài được phát cùng lúc, bật bài
-  // khác thì bài đang phát tự tắt.
+  // Bài đang phát (id) + trạng thái phát nhạc dùng CHUNG cho toàn app — audio
+  // thật sự nằm ở 1 thẻ <audio> gắn cố định ngoài mọi tab (xem cuối file), nên
+  // khi khách chuyển sang tab khác (BXH, Đơn hàng...) nhạc vẫn tiếp tục phát,
+  // chỉ tắt khi khách bấm tắt trực tiếp hoặc bài hát phát hết.
+  const musicAudioRef = useRef(null);
   const [nowPlayingId, setNowPlayingId] = useState(null);
+  const [musicIsPlaying, setMusicIsPlaying] = useState(false);
+  const [musicProgress, setMusicProgress] = useState(0); // 0-100
+  const [musicCurrentTime, setMusicCurrentTime] = useState(0);
+  const [musicDuration, setMusicDuration] = useState(0);
+
+  function handleToggleTrack(track) {
+    const audio = musicAudioRef.current;
+    if (!audio) return;
+    if (nowPlayingId === track.id) {
+      // Cùng bài đang phát → chỉ bật/tắt tạm dừng.
+      if (musicIsPlaying) {
+        audio.pause();
+      } else {
+        audio.play().catch(() => {});
+      }
+      return;
+    }
+    // Chuyển sang bài khác → nạp nguồn mới rồi phát luôn.
+    setNowPlayingId(track.id);
+    setMusicProgress(0);
+    setMusicCurrentTime(0);
+    setMusicDuration(0);
+    audio.src = track.src;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+  }
+
+  function handleSeekTrack(value) {
+    const audio = musicAudioRef.current;
+    if (!audio || !musicDuration) return;
+    audio.currentTime = value;
+    setMusicCurrentTime(value);
+    setMusicProgress((value / musicDuration) * 100);
+  }
 
   // Số thứ tự gốc của mỗi đơn (theo vị trí trong danh sách đầy đủ, chưa lọc) —
   // để khi tìm kiếm, đơn vẫn hiển thị đúng STT ban đầu thay vì đánh số lại theo kết quả lọc.
@@ -2491,8 +2488,13 @@ export default function DashboardClient({
                     track={track}
                     index={absoluteIndex}
                     completedOrders={completedOrdersCount}
-                    nowPlayingId={nowPlayingId}
-                    onRequestPlay={setNowPlayingId}
+                    isActive={nowPlayingId === track.id}
+                    isPlaying={musicIsPlaying}
+                    progress={musicProgress}
+                    currentTime={musicCurrentTime}
+                    duration={musicDuration}
+                    onToggle={handleToggleTrack}
+                    onSeek={handleSeekTrack}
                     blurRequirement={firstLockedIdx !== -1 && absoluteIndex > firstLockedIdx}
                   />
                 ));
@@ -2784,6 +2786,31 @@ export default function DashboardClient({
           </div>
         </div>
       )}
+
+      {/* Audio phát nhạc — gắn cố định NGOÀI mọi tab (không nằm trong khối
+          activeTab === "music") để khi khách chuyển sang tab khác, phần tử này
+          không bị React unmount, nhạc tiếp tục phát bình thường. Chỉ dừng khi
+          khách bấm tắt trực tiếp hoặc bài hát phát hết. */}
+      <audio
+        ref={musicAudioRef}
+        preload="none"
+        onPlay={() => setMusicIsPlaying(true)}
+        onPause={() => setMusicIsPlaying(false)}
+        onEnded={() => {
+          setMusicIsPlaying(false);
+          setMusicProgress(0);
+          setMusicCurrentTime(0);
+        }}
+        onLoadedMetadata={(e) => setMusicDuration(e.currentTarget.duration || 0)}
+        onTimeUpdate={(e) => {
+          const audio = e.currentTarget;
+          setMusicCurrentTime(audio.currentTime || 0);
+          if (audio.duration) {
+            setMusicProgress((audio.currentTime / audio.duration) * 100);
+          }
+        }}
+        className="hidden"
+      />
     </main>
   );
 }
