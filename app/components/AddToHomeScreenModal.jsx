@@ -30,7 +30,7 @@ export default function AddToHomeScreenModal() {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-sm origin-center scale-[0.33] rounded-2xl bg-white p-5 text-center shadow-2xl max-h-[90vh] overflow-y-auto">
         <h2 className="mb-3 font-display text-lg font-semibold text-neutral-900">
           Cách thêm web vào màn hình chính trên điện thoại
         </h2>
