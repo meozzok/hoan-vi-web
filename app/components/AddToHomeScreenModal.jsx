@@ -32,14 +32,31 @@ export default function AddToHomeScreenModal() {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-3">
       <div className="w-full max-w-[300px] rounded-[32px] bg-gradient-to-br from-pink-300 via-rose-300 to-orange-200 p-[3px] shadow-2xl">
         <div className="flex max-h-[92dvh] flex-col rounded-[30px] bg-white p-4 text-center">
-          <div className="mb-2 text-2xl">🌷</div>
+          <div className="mb-1 text-2xl">🌷</div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <img
-              src="/add-to-home-screen-guide.png"
-              alt="Hướng dẫn thêm web vào màn hình chính"
-              className="mx-auto w-full rounded-2xl object-contain"
-            />
+          <h2 className="mb-3 font-display text-[15px] font-semibold leading-snug text-neutral-800">
+            Cách thêm web vào màn hình chính trên điện thoại
+          </h2>
+
+          {/* Cute iPhone-style frame around the guide image */}
+          <div className="min-h-0 flex-1 overflow-y-auto px-1">
+            <div className="relative mx-auto w-full rounded-[38px] bg-gradient-to-b from-rose-200 to-pink-100 p-2 shadow-inner">
+              {/* side buttons */}
+              <div className="absolute -left-[3px] top-16 h-8 w-[3px] rounded-full bg-rose-300/80" />
+              <div className="absolute -left-[3px] top-28 h-12 w-[3px] rounded-full bg-rose-300/80" />
+              <div className="absolute -right-[3px] top-24 h-14 w-[3px] rounded-full bg-rose-300/80" />
+
+              {/* screen */}
+              <div className="relative overflow-hidden rounded-[30px] bg-white">
+                {/* dynamic island */}
+                <div className="absolute left-1/2 top-2 z-10 h-4 w-16 -translate-x-1/2 rounded-full bg-neutral-900/90" />
+                <img
+                  src="/add-to-home-screen-guide.png"
+                  alt="Hướng dẫn thêm web vào màn hình chính"
+                  className="w-full object-contain"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="mt-3 flex flex-shrink-0 flex-col gap-2">
