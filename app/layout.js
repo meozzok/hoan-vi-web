@@ -1,5 +1,6 @@
 import { Be_Vietnam_Pro, Inter, IBM_Plex_Mono, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
+import AddToHomeScreenModal from "./components/AddToHomeScreenModal";
 
 const beVietnamPro = Be_Vietnam_Pro({
   variable: "--font-display",
@@ -38,7 +39,10 @@ export default function RootLayout({ children }) {
       lang="vi"
       className={`${beVietnamPro.variable} ${inter.variable} ${plexMono.variable} ${cormorant.variable} h-full`}
     >
-      <body className="min-h-full font-body antialiased">{children}</body>
+      <body className="min-h-full font-body antialiased">
+        <AddToHomeScreenModal />
+        {children}
+      </body>
     </html>
   );
 }
