@@ -1545,7 +1545,7 @@ export default function DashboardClient({
                   onClick={() => setHuongDanOpen(true)}
                   className="shrink-0 text-[11px] sm:text-xs font-bold text-danger underline underline-offset-2 cursor-pointer hover:brightness-90"
                 >
-                  Hướng dẫn
+                  Video hướng dẫn
                 </button>
                 <button
                   type="button"
