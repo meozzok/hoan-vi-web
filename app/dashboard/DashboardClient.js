@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DEFAULT_THEME, getStoredTheme } from "../../lib/theme";
+import HuongDanTaoLinkModal from "../components/HuongDanTaoLinkModal";
 
 // Link nhóm Zalo nơi khách nhận My ID — dùng để khách gửi lệnh rút tiền vào nhóm.
 const ZALO_GROUP_LINK = "https://zalo.me/g/msd7vvhjcwiffr3tyqor";
@@ -856,6 +857,7 @@ export default function DashboardClient({
   const [expandedNotes, setExpandedNotes] = useState({});
   // Trạng thái mở/đóng khối "Lưu ý quan trọng để được hoàn tiền" hiển thị trước khi tạo link.
   const [mainNoticeOpen, setMainNoticeOpen] = useState(false);
+  const [huongDanOpen, setHuongDanOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
 
   // Đơn hàng: tìm kiếm theo mã đơn / tên sản phẩm + lọc theo trạng thái + phân trang.
@@ -1537,6 +1539,13 @@ export default function DashboardClient({
                   }`}
                 >
                   🎀 Tạo 1 link
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHuongDanOpen(true)}
+                  className="shrink-0 text-[11px] sm:text-xs font-bold text-danger underline underline-offset-2 cursor-pointer hover:brightness-90"
+                >
+                  Hướng dẫn
                 </button>
                 <button
                   type="button"
@@ -2811,6 +2820,10 @@ export default function DashboardClient({
         }}
         className="hidden"
       />
+
+      {/* Modal hướng dẫn tạo link — mở khi khách bấm chữ "Hướng dẫn" màu đỏ
+          nằm giữa 2 nút chọn chế độ tạo link. */}
+      <HuongDanTaoLinkModal open={huongDanOpen} onClose={() => setHuongDanOpen(false)} />
     </main>
   );
 }
