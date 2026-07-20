@@ -1,10 +1,42 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+
+// Tên khách được lưu ngay trên trình duyệt (localStorage) NGOÀI việc gửi
+// lên server — vì vậy gõ xong rồi tải lại trang (kể cả khi mạng chập chờn
+// hoặc request lưu lên server bị lỗi) tên vẫn còn nguyên trên máy admin.
+const LOCAL_NAMES_KEY = "hoanvi_admin_customer_names_v1";
+
+function readLocalNames() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(LOCAL_NAMES_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalNames(map) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(LOCAL_NAMES_KEY, JSON.stringify(map));
+  } catch {
+    // Bỏ qua — nếu localStorage đầy/bị chặn thì vẫn còn bản lưu trên server.
+  }
+}
 
 function formatVnd(amount) {
   return new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(amount || 0) + "đ";
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return "—";
+  const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return dateStr;
+  return `${m[3]}/${m[2]}/${m[1]}`;
 }
 
 function truncateChars(text, limit = 60) {
@@ -46,6 +78,13 @@ const AMOUNT_COLORS = {
   final80: { solid: "#0ecb81", border: "rgba(47,158,99,0.25)", soft: "rgba(47,158,99,0.05)" },
 };
 
+// 3 ô hoa hồng theo trạng thái, hiển thị cho từng Sub ID.
+const GROUP_STAT_COLORS = {
+  pending: { solid: "#c8930a", border: "rgba(200,147,10,0.30)", soft: "rgba(200,147,10,0.07)" },
+  completed: { solid: "#1f9d5c", border: "rgba(31,157,92,0.30)", soft: "rgba(31,157,92,0.07)" },
+  total: { solid: "#0ecb81", border: "rgba(14,203,129,0.35)", soft: "rgba(14,203,129,0.08)" },
+};
+
 function ChevronIcon({ open }) {
   return (
     <svg
@@ -78,6 +117,15 @@ function OrderRow({ order }) {
         </span>
       </div>
       <p className="font-mono-num text-xs text-muted mt-1">Mã đơn: {order.orderId || "—"}</p>
+
+      <div className="flex items-center gap-4 mt-1.5">
+        <p className="text-[11px] text-muted">
+          Ngày đặt: <span className="font-mono-num">{formatDate(order.orderedAt)}</span>
+        </p>
+        <p className="text-[11px] text-muted">
+          Ngày hoàn thành: <span className="font-mono-num">{formatDate(order.completedAt)}</span>
+        </p>
+      </div>
 
       <div className="grid grid-cols-3 gap-1.5 mt-3">
         <div
@@ -121,6 +169,16 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
   const [expanded, setExpanded] = useState({});
   const saveTimers = useRef({});
 
+  // Sau khi hydrate xong, nạp thêm bản lưu trên trình duyệt — nếu tên nào
+  // đã gõ trước đó nhưng chưa kịp đồng bộ lên server thì vẫn hiện lại đúng.
+  useEffect(() => {
+    const local = readLocalNames();
+    if (Object.keys(local).length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- đồng bộ 1 lần từ localStorage (nguồn ngoài React) sau khi mount, đúng theo khuyến nghị của React docs.
+      setCustomerNames((prev) => ({ ...prev, ...local }));
+    }
+  }, []);
+
   const groups = useMemo(() => {
     const map = new Map();
     for (const order of orders) {
@@ -128,15 +186,15 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
       map.get(order.subId).push(order);
     }
     return Array.from(map.entries()).map(([subId, list]) => {
-      const totals = list.reduce(
-        (acc, o) => ({
-          gross: acc.gross + (o.gross || 0),
-          afterTax: acc.afterTax + (o.afterTax || 0),
-          final80: acc.final80 + (o.final80 || 0),
-        }),
-        { gross: 0, afterTax: 0, final80: 0 }
-      );
-      return { subId, orders: list, totals };
+      const stat = { pending: 0, completed: 0, total: 0 };
+      for (const o of list) {
+        const amount = o.final80 || 0;
+        stat.total += amount;
+        const kind = classifyStatus(o.status);
+        if (kind === "pending") stat.pending += amount;
+        else if (kind === "completed") stat.completed += amount;
+      }
+      return { subId, orders: list, stat };
     });
   }, [orders]);
 
@@ -160,7 +218,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
         body: JSON.stringify({ subId, name }),
       });
     } catch {
-      // Bỏ qua lỗi lưu tạm thời — giá trị vẫn còn trên màn hình, thử lại khi gõ tiếp.
+      // Bỏ qua lỗi mạng — tên vẫn còn trong localStorage nên không mất.
     } finally {
       setSavingKeys((s) => {
         const next = { ...s };
@@ -171,7 +229,11 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
   }, []);
 
   function handleNameChange(subId, value) {
-    setCustomerNames((prev) => ({ ...prev, [subId]: value }));
+    setCustomerNames((prev) => {
+      const next = { ...prev, [subId]: value };
+      writeLocalNames(next);
+      return next;
+    });
     clearTimeout(saveTimers.current[subId]);
     saveTimers.current[subId] = setTimeout(() => persistName(subId, value), 600);
   }
@@ -187,7 +249,9 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
       const data = await res.json().catch(() => null);
       if (res.ok && data) {
         setOrders(data.orders || []);
-        setCustomerNames(data.customerNames || {});
+        // Ưu tiên tên đã lưu trên trình duyệt (mới nhất) đè lên tên từ server,
+        // phòng khi có tên vừa gõ mà server chưa kịp lưu xong.
+        setCustomerNames({ ...(data.customerNames || {}), ...readLocalNames() });
       }
     } finally {
       setRefreshing(false);
@@ -210,7 +274,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
               Admin — Danh sách đơn hàng
             </h1>
             <p className="text-muted text-sm mt-1">
-              Chỉ hiện các sub ID dạng số đủ 18 chữ số · {orders.length} đơn · {groups.length} khách
+              Chỉ hiện các sub ID dạng số trên 10 chữ số · {orders.length} đơn · {groups.length} khách
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -245,22 +309,28 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                   key={group.subId}
                   className="bg-panel border border-border rounded-2xl overflow-hidden shadow-sm shadow-black/5"
                 >
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => toggleGroup(group.subId)}
-                    className="w-full flex flex-wrap sm:flex-nowrap items-center gap-3 px-4 sm:px-5 py-4 text-left cursor-pointer hover:bg-panel-2/60 transition-colors"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleGroup(group.subId);
+                      }
+                    }}
+                    className="w-full px-4 sm:px-5 py-4 cursor-pointer hover:bg-panel-2/60 transition-colors"
                   >
-                    <ChevronIcon open={isOpen} />
-
-                    <div className="min-w-0 shrink-0">
-                      <p className="text-[11px] text-muted">Sub ID</p>
-                      <p className="font-mono-num text-sm font-bold truncate">{group.subId}</p>
+                    <div className="flex items-center gap-3">
+                      <ChevronIcon open={isOpen} />
+                      <div className="min-w-0">
+                        <p className="text-[11px] text-muted">Sub ID</p>
+                        <p className="font-mono-num text-sm font-bold truncate">{group.subId}</p>
+                      </div>
+                      <p className="text-[11px] text-muted ml-auto shrink-0">{group.orders.length} đơn</p>
                     </div>
 
-                    <div
-                      className="flex-1 min-w-[160px]"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <div className="mt-3" onClick={(e) => e.stopPropagation()}>
                       <p className="text-[11px] text-muted mb-1">Tên khách hàng</p>
                       <input
                         type="text"
@@ -271,13 +341,36 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                       />
                     </div>
 
-                    <div className="text-right shrink-0 ml-auto sm:ml-0">
-                      <p className="text-[11px] text-muted">{group.orders.length} đơn</p>
-                      <p className="font-mono-num text-sm font-bold" style={{ color: AMOUNT_COLORS.final80.solid }}>
-                        {formatVnd(group.totals.final80)}
-                      </p>
+                    <div className="grid grid-cols-3 gap-1.5 mt-3">
+                      <div
+                        className="text-center rounded-lg py-1.5"
+                        style={{ border: `1px solid ${GROUP_STAT_COLORS.pending.border}`, background: GROUP_STAT_COLORS.pending.soft }}
+                      >
+                        <p className="text-[10px] text-ink font-semibold">Đang chờ xử lý</p>
+                        <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.pending.solid }}>
+                          {formatVnd(group.stat.pending)}
+                        </p>
+                      </div>
+                      <div
+                        className="text-center rounded-lg py-1.5"
+                        style={{ border: `1px solid ${GROUP_STAT_COLORS.completed.border}`, background: GROUP_STAT_COLORS.completed.soft }}
+                      >
+                        <p className="text-[10px] text-ink font-semibold">Hoàn thành</p>
+                        <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.completed.solid }}>
+                          {formatVnd(group.stat.completed)}
+                        </p>
+                      </div>
+                      <div
+                        className="text-center rounded-lg py-1.5"
+                        style={{ border: `1px solid ${GROUP_STAT_COLORS.total.border}`, background: GROUP_STAT_COLORS.total.soft }}
+                      >
+                        <p className="text-[10px] text-ink font-semibold">Tổng hoa hồng</p>
+                        <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.total.solid }}>
+                          {formatVnd(group.stat.total)}
+                        </p>
+                      </div>
                     </div>
-                  </button>
+                  </div>
 
                   {isOpen && (
                     <div className="flex flex-col gap-2 px-3 sm:px-4 pb-4">
@@ -319,7 +412,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
         <p className="text-muted text-xs mt-3">
           {Object.keys(savingKeys).length > 0
             ? "Đang lưu tên khách..."
-            : "Tên khách tự lưu theo Sub ID khi bạn ngừng gõ — lần sau đơn mới của cùng khách sẽ tự có sẵn tên."}
+            : "Tên khách tự lưu theo Sub ID ngay trên trình duyệt này khi bạn ngừng gõ — lần sau đơn mới của cùng khách sẽ tự có sẵn tên."}
         </p>
       </div>
     </main>
