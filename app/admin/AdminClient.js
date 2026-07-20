@@ -8,10 +8,25 @@ import { useRouter } from "next/navigation";
 // hoặc request lưu lên server bị lỗi) tên vẫn còn nguyên trên máy admin.
 const LOCAL_NAMES_KEY = "hoanvi_admin_customer_names_v1";
 
-// Phân trang danh sách Sub ID — cùng kiểu với phần Ví tiền/Đơn hàng: mỗi
-// trang 10 sub ID, tối đa 5 số trang hiện cùng lúc trước khi bấm "›...".
-const PAGE_SIZE = 10;
+// Phân trang danh sách Sub ID — mỗi trang 20 sub ID, hiển thị dạng lưới
+// 2 cột x 10 hàng, tối đa 5 số trang hiện cùng lúc trước khi bấm "›...".
+const PAGE_SIZE = 20;
 const PAGE_WINDOW = 5;
+
+// 3 ô lọc/tổng hợp hiển thị phía trên danh sách sub ID.
+const FILTER_OPTIONS = [
+  { key: "pending", label: "Đang chờ xử lý" },
+  { key: "completed", label: "Đã thanh toán" },
+  { key: "total", label: "Tổng hoa hồng" },
+];
+
+// 4 ô sắp xếp danh sách sub ID.
+const SORT_OPTIONS = [
+  { key: "newest", label: "Mới nhất" },
+  { key: "oldest", label: "Cũ nhất" },
+  { key: "most", label: "Nhiều nhất" },
+  { key: "least", label: "Ít nhất" },
+];
 
 function readLocalNames() {
   if (typeof window === "undefined") return {};
@@ -89,6 +104,23 @@ const GROUP_STAT_COLORS = {
   completed: { solid: "#1f9d5c", border: "rgba(31,157,92,0.30)", soft: "rgba(31,157,92,0.07)" },
   total: { solid: "#0ecb81", border: "rgba(14,203,129,0.35)", soft: "rgba(14,203,129,0.08)" },
 };
+
+function SearchIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
 
 function ChevronIcon({ open }) {
   return (
@@ -174,6 +206,9 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
   const [expanded, setExpanded] = useState({});
   const [groupPage, setGroupPage] = useState(1);
   const [pageWindowStart, setPageWindowStart] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("total");
+  const [sortMode, setSortMode] = useState("newest");
   const saveTimers = useRef({});
 
   // Sau khi hydrate xong, nạp thêm bản lưu trên trình duyệt — nếu tên nào
@@ -201,27 +236,76 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
         if (kind === "pending") stat.pending += amount;
         else if (kind === "completed") stat.completed += amount;
       }
-      return { subId, orders: list, stat };
+      // `orders` gốc đã được sắp xếp mới nhất trước, nên đơn đầu tiên gặp
+      // trong mỗi nhóm là đơn mới nhất và đơn cuối cùng là đơn cũ nhất.
+      const latestOrderedAt = list[0]?.orderedAt || "";
+      const oldestOrderedAt = list[list.length - 1]?.orderedAt || "";
+      return { subId, orders: list, stat, latestOrderedAt, oldestOrderedAt };
     });
   }, [orders]);
 
-  const totals = useMemo(() => {
-    return orders.reduce(
-      (acc, o) => ({
-        gross: acc.gross + (o.gross || 0),
-        afterTax: acc.afterTax + (o.afterTax || 0),
-        final80: acc.final80 + (o.final80 || 0),
-      }),
-      { gross: 0, afterTax: 0, final80: 0 }
-    );
-  }, [orders]);
+  // Lọc theo ô tìm kiếm — khớp theo Sub ID, tên khách, mã đơn hoặc tên sản phẩm.
+  const searchedGroups = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return groups;
+    return groups.filter((g) => {
+      if (g.subId.toLowerCase().includes(q)) return true;
+      const name = (customerNames[g.subId] || "").toLowerCase();
+      if (name.includes(q)) return true;
+      return g.orders.some(
+        (o) =>
+          (o.orderId || "").toLowerCase().includes(q) ||
+          (o.productName || "").toLowerCase().includes(q)
+      );
+    });
+  }, [groups, searchQuery, customerNames]);
 
-  const totalPages = Math.max(1, Math.ceil(groups.length / PAGE_SIZE));
+  // Tổng hợp số liệu cho 3 ô lọc — tính trên tập đã qua tìm kiếm, không phụ
+  // thuộc vào ô lọc trạng thái đang chọn.
+  const filterTotals = useMemo(() => {
+    return searchedGroups.reduce(
+      (acc, g) => ({
+        pending: acc.pending + g.stat.pending,
+        completed: acc.completed + g.stat.completed,
+        total: acc.total + g.stat.total,
+      }),
+      { pending: 0, completed: 0, total: 0 }
+    );
+  }, [searchedGroups]);
+
+  // Ô lọc: Đang chờ xử lý / Đã thanh toán chỉ hiện các sub ID có phát sinh
+  // hoa hồng ở trạng thái tương ứng; Tổng hoa hồng hiện tất cả.
+  const filteredGroups = useMemo(() => {
+    if (statusFilter === "pending") return searchedGroups.filter((g) => g.stat.pending > 0);
+    if (statusFilter === "completed") return searchedGroups.filter((g) => g.stat.completed > 0);
+    return searchedGroups;
+  }, [searchedGroups, statusFilter]);
+
+  // Sắp xếp: mới nhất/cũ nhất theo ngày đặt đơn gần nhất của sub ID,
+  // nhiều nhất/ít nhất theo tổng hoa hồng của sub ID.
+  const sortedGroups = useMemo(() => {
+    const arr = [...filteredGroups];
+    arr.sort((a, b) => {
+      if (sortMode === "most") return b.stat.total - a.stat.total;
+      if (sortMode === "least") return a.stat.total - b.stat.total;
+      if (sortMode === "oldest") return a.latestOrderedAt.localeCompare(b.latestOrderedAt);
+      return b.latestOrderedAt.localeCompare(a.latestOrderedAt);
+    });
+    return arr;
+  }, [filteredGroups, sortMode]);
+
+  // Quay về trang 1 mỗi khi đổi tìm kiếm/lọc/sắp xếp, tránh hiện trang trống.
+  useEffect(() => {
+    setGroupPage(1);
+    setPageWindowStart(0);
+  }, [searchQuery, statusFilter, sortMode]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedGroups.length / PAGE_SIZE));
   const effectiveGroupPage = Math.min(groupPage, totalPages);
   const pagedGroups = useMemo(() => {
     const start = (effectiveGroupPage - 1) * PAGE_SIZE;
-    return groups.slice(start, start + PAGE_SIZE);
-  }, [groups, effectiveGroupPage]);
+    return sortedGroups.slice(start, start + PAGE_SIZE);
+  }, [sortedGroups, effectiveGroupPage]);
 
   function goToPage(p) {
     setGroupPage(p);
@@ -295,9 +379,9 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
 
   return (
     <main className="admin-green min-h-screen px-4 py-8 sm:py-10">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between gap-3 mb-6">
-          <div>
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-start justify-between gap-3 mb-5">
+          <div className="min-w-0">
             <h1 className="font-display text-xl sm:text-2xl font-bold text-cream">
               Admin — Danh sách đơn hàng
             </h1>
@@ -305,22 +389,100 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
               Chỉ hiện các sub ID dạng số trên 10 chữ số · {orders.length} đơn · {groups.length} khách
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={handleRefresh}
               disabled={refreshing}
-              className="px-4 py-2 rounded-xl text-sm font-bold bg-panel border border-border text-cream hover:border-gold transition-colors disabled:opacity-50 cursor-pointer active:scale-95"
+              className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-panel border border-border text-cream hover:border-gold transition-colors disabled:opacity-50 cursor-pointer active:scale-95"
             >
               {refreshing ? "Đang tải..." : "Làm mới"}
             </button>
             <button
               type="button"
               onClick={handleLogout}
-              className="px-4 py-2 rounded-xl text-sm font-bold bg-panel border border-border text-danger hover:border-danger transition-colors cursor-pointer active:scale-95"
+              className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-panel border border-border text-danger hover:border-danger transition-colors cursor-pointer active:scale-95"
             >
               Đăng xuất
             </button>
+          </div>
+        </div>
+
+        {/* Ô tìm kiếm + 3 ô lọc/tổng hợp + 4 ô sắp xếp */}
+        <div className="flex flex-col gap-2 mb-4">
+          <div className="relative flex items-center bg-surface border border-border rounded-full">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Nhập mã đơn, tên sản phẩm hoặc sub ID..."
+              className="w-full bg-transparent pl-4 pr-16 py-2.5 text-sm outline-none placeholder:text-muted/60 text-cream"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                aria-label="Xóa tìm kiếm"
+                title="Xóa tìm kiếm"
+                className="absolute right-9 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-6 h-6 rounded-full text-muted hover:bg-panel active:scale-90 transition-all cursor-pointer"
+              >
+                <CloseIcon className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <span
+              aria-hidden="true"
+              className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-5 h-5 text-muted"
+            >
+              <SearchIcon className="w-4 h-4" />
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-1.5">
+            {FILTER_OPTIONS.map((f) => {
+              const active = statusFilter === f.key;
+              const colors = GROUP_STAT_COLORS[f.key];
+              const amount =
+                f.key === "pending" ? filterTotals.pending : f.key === "completed" ? filterTotals.completed : filterTotals.total;
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setStatusFilter(f.key)}
+                  className="rounded-xl py-1.5 text-center transition-all cursor-pointer active:scale-95"
+                  style={
+                    active
+                      ? { background: colors.solid, boxShadow: `0 3px 10px ${colors.soft}` }
+                      : { background: colors.soft, border: `1px solid ${colors.border}` }
+                  }
+                >
+                  <p className={`text-[10px] font-semibold ${active ? "text-white/90" : "text-ink"}`}>{f.label}</p>
+                  <p
+                    className="font-mono-num text-xs font-bold"
+                    style={{ color: active ? "#fff" : colors.solid }}
+                  >
+                    {formatVnd(amount)}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-1.5 bg-panel border border-border rounded-full px-1.5 py-1.5 overflow-x-auto scrollbar-thin">
+            {SORT_OPTIONS.map((s) => {
+              const active = sortMode === s.key;
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => setSortMode(s.key)}
+                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer active:scale-95 ${
+                    active ? "bg-highlight text-white" : "text-muted hover:text-cream"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -328,38 +490,19 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
           <div className="bg-panel border border-border rounded-2xl px-7 py-10 text-center">
             <p className="text-muted text-sm">Chưa có đơn hàng nào khớp điều kiện sub ID.</p>
           </div>
+        ) : sortedGroups.length === 0 ? (
+          <div className="bg-panel border border-border rounded-2xl px-7 py-10 text-center">
+            <p className="text-muted text-sm">Không tìm thấy sub ID nào khớp điều kiện lọc/tìm kiếm.</p>
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <div className="bg-panel border-2 border-gold/60 rounded-2xl px-5 py-4">
-              <p className="text-sm font-bold text-gold mb-2">Tổng hoa hồng (tất cả sub ID)</p>
-              <div className="grid grid-cols-3 gap-1.5">
-                <div className="text-center">
-                  <p className="text-[10px] text-muted">Hoa hồng</p>
-                  <p className="font-mono-num text-sm font-bold" style={{ color: AMOUNT_COLORS.gross.solid }}>
-                    {formatVnd(totals.gross)}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-[10px] text-muted">Sau thuế -11%</p>
-                  <p className="font-mono-num text-sm font-bold" style={{ color: AMOUNT_COLORS.afterTax.solid }}>
-                    {formatVnd(totals.afterTax)}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-[10px] text-muted">Hoa hồng 80%</p>
-                  <p className="font-mono-num text-sm font-bold" style={{ color: AMOUNT_COLORS.final80.solid }}>
-                    {formatVnd(totals.final80)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {pagedGroups.map((group) => {
               const isOpen = !!expanded[group.subId];
               return (
                 <div
                   key={group.subId}
-                  className="bg-panel border border-border rounded-2xl overflow-hidden shadow-sm shadow-black/5"
+                  className="bg-panel border border-border rounded-xl overflow-hidden shadow-sm shadow-black/5"
                 >
                   <div
                     role="button"
@@ -371,53 +514,53 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                         toggleGroup(group.subId);
                       }
                     }}
-                    className="w-full px-4 sm:px-5 py-4 cursor-pointer hover:bg-panel-2/60 transition-colors"
+                    className="w-full px-2.5 sm:px-3 py-2 cursor-pointer hover:bg-panel-2/60 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
                       <ChevronIcon open={isOpen} />
                       <div className="min-w-0">
-                        <p className="text-[11px] text-muted">Sub ID</p>
-                        <p className="font-mono-num text-sm font-bold truncate">{group.subId}</p>
+                        <p className="text-[9px] text-muted">Sub ID</p>
+                        <p className="font-mono-num text-xs font-bold truncate">{group.subId}</p>
                       </div>
-                      <p className="text-[11px] text-muted ml-auto shrink-0">{group.orders.length} đơn</p>
+                      <p className="text-[9px] text-muted ml-auto shrink-0">{group.orders.length} đơn</p>
                     </div>
 
-                    <div className="mt-3" onClick={(e) => e.stopPropagation()}>
-                      <p className="text-[11px] text-muted mb-1">Tên khách hàng</p>
+                    <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+                      <p className="text-[9px] text-muted mb-0.5">Tên khách hàng</p>
                       <input
                         type="text"
                         value={customerNames[group.subId] || ""}
                         onChange={(e) => handleNameChange(group.subId, e.target.value)}
                         placeholder="Tự nhập tên khách..."
-                        className="w-full bg-surface border border-border rounded-lg px-3 py-1.5 text-sm text-cream placeholder:text-muted/60 outline-none focus:border-gold transition-colors"
+                        className="w-full bg-surface border border-border rounded-md px-2 py-1 text-xs text-cream placeholder:text-muted/60 outline-none focus:border-gold transition-colors"
                       />
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5 mt-3">
+                    <div className="grid grid-cols-3 gap-1 mt-1.5">
                       <div
-                        className="text-center rounded-lg py-1.5"
+                        className="text-center rounded-md py-1"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.pending.border}`, background: GROUP_STAT_COLORS.pending.soft }}
                       >
-                        <p className="text-[10px] text-ink font-semibold">Đang chờ xử lý</p>
-                        <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.pending.solid }}>
+                        <p className="text-[8px] text-ink font-semibold leading-tight">Đang chờ xử lý</p>
+                        <p className="font-mono-num text-[11px] font-bold" style={{ color: GROUP_STAT_COLORS.pending.solid }}>
                           {formatVnd(group.stat.pending)}
                         </p>
                       </div>
                       <div
-                        className="text-center rounded-lg py-1.5"
+                        className="text-center rounded-md py-1"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.completed.border}`, background: GROUP_STAT_COLORS.completed.soft }}
                       >
-                        <p className="text-[10px] text-ink font-semibold">Hoàn thành</p>
-                        <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.completed.solid }}>
+                        <p className="text-[8px] text-ink font-semibold leading-tight">Đã thanh toán</p>
+                        <p className="font-mono-num text-[11px] font-bold" style={{ color: GROUP_STAT_COLORS.completed.solid }}>
                           {formatVnd(group.stat.completed)}
                         </p>
                       </div>
                       <div
-                        className="text-center rounded-lg py-1.5"
+                        className="text-center rounded-md py-1"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.total.border}`, background: GROUP_STAT_COLORS.total.soft }}
                       >
-                        <p className="text-[10px] text-ink font-semibold">Tổng hoa hồng</p>
-                        <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.total.solid }}>
+                        <p className="text-[8px] text-ink font-semibold leading-tight">Tổng hoa hồng</p>
+                        <p className="font-mono-num text-[11px] font-bold" style={{ color: GROUP_STAT_COLORS.total.solid }}>
                           {formatVnd(group.stat.total)}
                         </p>
                       </div>
@@ -425,7 +568,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                   </div>
 
                   {isOpen && (
-                    <div className="flex flex-col gap-2 px-3 sm:px-4 pb-4">
+                    <div className="flex flex-col gap-2 px-2.5 sm:px-3 pb-3">
                       {group.orders.map((order) => (
                         <OrderRow key={rowKeyOf(order)} order={order} />
                       ))}
@@ -434,6 +577,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                 </div>
               );
             })}
+            </div>
 
             {totalPages > 1 && (
               <div className="flex flex-wrap items-center justify-center gap-1.5 bg-panel border border-border rounded-2xl px-5 py-5">
