@@ -8,8 +8,8 @@ import { useRouter } from "next/navigation";
 // hoặc request lưu lên server bị lỗi) tên vẫn còn nguyên trên máy admin.
 const LOCAL_NAMES_KEY = "hoanvi_admin_customer_names_v1";
 
-// Phân trang danh sách Sub ID — mỗi trang 10 sub ID, hiển thị dạng lưới
-// 2 cột x 5 hàng, tối đa 5 số trang hiện cùng lúc trước khi bấm "›...".
+// Phân trang danh sách Sub ID — mỗi trang 10 sub ID, mỗi sub ID 1 dòng
+// (rộng hết khung), tối đa 5 số trang hiện cùng lúc trước khi bấm "›...".
 const PAGE_SIZE = 10;
 const PAGE_WINDOW = 5;
 
@@ -497,7 +497,6 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-2 gap-2">
             {pagedGroups.map((group) => {
               const isOpen = !!expanded[group.subId];
               return (
@@ -580,7 +579,6 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                 </div>
               );
             })}
-            </div>
 
             {totalPages > 1 && (
               <div className="flex flex-wrap items-center justify-center gap-1.5 bg-panel border border-border rounded-2xl px-5 py-5">
