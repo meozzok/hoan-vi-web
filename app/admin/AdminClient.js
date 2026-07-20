@@ -8,9 +8,9 @@ import { useRouter } from "next/navigation";
 // hoặc request lưu lên server bị lỗi) tên vẫn còn nguyên trên máy admin.
 const LOCAL_NAMES_KEY = "hoanvi_admin_customer_names_v1";
 
-// Phân trang danh sách Sub ID — mỗi trang 20 sub ID, hiển thị dạng lưới
-// 2 cột x 10 hàng, tối đa 5 số trang hiện cùng lúc trước khi bấm "›...".
-const PAGE_SIZE = 20;
+// Phân trang danh sách Sub ID — mỗi trang 10 sub ID, hiển thị dạng lưới
+// 2 cột x 5 hàng, tối đa 5 số trang hiện cùng lúc trước khi bấm "›...".
+const PAGE_SIZE = 10;
 const PAGE_WINDOW = 5;
 
 // 3 ô lọc/tổng hợp hiển thị phía trên danh sách sub ID.
@@ -517,53 +517,53 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                         toggleGroup(group.subId);
                       }
                     }}
-                    className="w-full px-2.5 sm:px-3 py-2 cursor-pointer hover:bg-panel-2/60 transition-colors"
+                    className="w-full px-4 sm:px-5 py-4 cursor-pointer hover:bg-panel-2/60 transition-colors"
                   >
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-3">
                       <ChevronIcon open={isOpen} />
                       <div className="min-w-0">
-                        <p className="text-[9px] text-muted">Sub ID</p>
-                        <p className="font-mono-num text-xs font-bold truncate">{group.subId}</p>
+                        <p className="text-[11px] text-muted">Sub ID</p>
+                        <p className="font-mono-num text-sm font-bold truncate">{group.subId}</p>
                       </div>
-                      <p className="text-[9px] text-muted ml-auto shrink-0">{group.orders.length} đơn</p>
+                      <p className="text-[11px] text-muted ml-auto shrink-0">{group.orders.length} đơn</p>
                     </div>
 
-                    <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
-                      <p className="text-[9px] text-muted mb-0.5">Tên khách hàng</p>
+                    <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+                      <p className="text-[11px] text-muted mb-1">Tên khách hàng</p>
                       <input
                         type="text"
                         value={customerNames[group.subId] || ""}
                         onChange={(e) => handleNameChange(group.subId, e.target.value)}
                         placeholder="Tự nhập tên khách..."
-                        className="w-full bg-surface border border-border rounded-md px-2 py-1 text-xs text-cream placeholder:text-muted/60 outline-none focus:border-gold transition-colors"
+                        className="w-full bg-surface border border-border rounded-lg px-3 py-1.5 text-sm text-cream placeholder:text-muted/60 outline-none focus:border-gold transition-colors"
                       />
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1 mt-1.5">
+                    <div className="grid grid-cols-3 gap-1.5 mt-3">
                       <div
-                        className="text-center rounded-md py-1"
+                        className="text-center rounded-lg py-1.5"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.pending.border}`, background: GROUP_STAT_COLORS.pending.soft }}
                       >
-                        <p className="text-[8px] text-ink font-semibold leading-tight">Đang chờ xử lý</p>
-                        <p className="font-mono-num text-[11px] font-bold" style={{ color: GROUP_STAT_COLORS.pending.solid }}>
+                        <p className="text-[10px] text-ink font-semibold">Đang chờ xử lý</p>
+                        <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.pending.solid }}>
                           {formatVnd(group.stat.pending)}
                         </p>
                       </div>
                       <div
-                        className="text-center rounded-md py-1"
+                        className="text-center rounded-lg py-1.5"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.completed.border}`, background: GROUP_STAT_COLORS.completed.soft }}
                       >
-                        <p className="text-[8px] text-ink font-semibold leading-tight">Đã thanh toán</p>
-                        <p className="font-mono-num text-[11px] font-bold" style={{ color: GROUP_STAT_COLORS.completed.solid }}>
+                        <p className="text-[10px] text-ink font-semibold">Đã thanh toán</p>
+                        <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.completed.solid }}>
                           {formatVnd(group.stat.completed)}
                         </p>
                       </div>
                       <div
-                        className="text-center rounded-md py-1"
+                        className="text-center rounded-lg py-1.5"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.total.border}`, background: GROUP_STAT_COLORS.total.soft }}
                       >
-                        <p className="text-[8px] text-ink font-semibold leading-tight">Tổng hoa hồng</p>
-                        <p className="font-mono-num text-[11px] font-bold" style={{ color: GROUP_STAT_COLORS.total.solid }}>
+                        <p className="text-[10px] text-ink font-semibold">Tổng hoa hồng</p>
+                        <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.total.solid }}>
                           {formatVnd(group.stat.total)}
                         </p>
                       </div>
@@ -571,7 +571,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                   </div>
 
                   {isOpen && (
-                    <div className="flex flex-col gap-2 px-2.5 sm:px-3 pb-3">
+                    <div className="flex flex-col gap-2 px-3 sm:px-4 pb-4">
                       {group.orders.map((order) => (
                         <OrderRow key={rowKeyOf(order)} order={order} />
                       ))}
