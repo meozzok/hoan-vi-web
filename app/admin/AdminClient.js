@@ -8,6 +8,11 @@ import { useRouter } from "next/navigation";
 // hoặc request lưu lên server bị lỗi) tên vẫn còn nguyên trên máy admin.
 const LOCAL_NAMES_KEY = "hoanvi_admin_customer_names_v1";
 
+// Phân trang danh sách Sub ID — cùng kiểu với phần Ví tiền/Đơn hàng: mỗi
+// trang 10 sub ID, tối đa 5 số trang hiện cùng lúc trước khi bấm "›...".
+const PAGE_SIZE = 10;
+const PAGE_WINDOW = 5;
+
 function readLocalNames() {
   if (typeof window === "undefined") return {};
   try {
@@ -167,6 +172,8 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
   const [refreshing, setRefreshing] = useState(false);
   const [savingKeys, setSavingKeys] = useState({});
   const [expanded, setExpanded] = useState({});
+  const [groupPage, setGroupPage] = useState(1);
+  const [pageWindowStart, setPageWindowStart] = useState(0);
   const saveTimers = useRef({});
 
   // Sau khi hydrate xong, nạp thêm bản lưu trên trình duyệt — nếu tên nào
@@ -209,6 +216,25 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
     );
   }, [orders]);
 
+  const totalPages = Math.max(1, Math.ceil(groups.length / PAGE_SIZE));
+  const effectiveGroupPage = Math.min(groupPage, totalPages);
+  const pagedGroups = useMemo(() => {
+    const start = (effectiveGroupPage - 1) * PAGE_SIZE;
+    return groups.slice(start, start + PAGE_SIZE);
+  }, [groups, effectiveGroupPage]);
+
+  function goToPage(p) {
+    setGroupPage(p);
+  }
+
+  function advancePageWindow() {
+    setPageWindowStart((w) => Math.min(w + PAGE_WINDOW, Math.max(0, totalPages - 1)));
+  }
+
+  function retreatPageWindow() {
+    setPageWindowStart((w) => Math.max(0, w - PAGE_WINDOW));
+  }
+
   const persistName = useCallback(async (subId, name) => {
     setSavingKeys((s) => ({ ...s, [subId]: true }));
     try {
@@ -249,6 +275,8 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
       const data = await res.json().catch(() => null);
       if (res.ok && data) {
         setOrders(data.orders || []);
+        setGroupPage(1);
+        setPageWindowStart(0);
         // Ưu tiên tên đã lưu trên trình duyệt (mới nhất) đè lên tên từ server,
         // phòng khi có tên vừa gõ mà server chưa kịp lưu xong.
         setCustomerNames({ ...(data.customerNames || {}), ...readLocalNames() });
@@ -302,7 +330,31 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {groups.map((group) => {
+            <div className="bg-panel border-2 border-gold/60 rounded-2xl px-5 py-4">
+              <p className="text-sm font-bold text-gold mb-2">Tổng hoa hồng (tất cả sub ID)</p>
+              <div className="grid grid-cols-3 gap-1.5">
+                <div className="text-center">
+                  <p className="text-[10px] text-muted">Hoa hồng</p>
+                  <p className="font-mono-num text-sm font-bold" style={{ color: AMOUNT_COLORS.gross.solid }}>
+                    {formatVnd(totals.gross)}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-muted">Sau thuế -11%</p>
+                  <p className="font-mono-num text-sm font-bold" style={{ color: AMOUNT_COLORS.afterTax.solid }}>
+                    {formatVnd(totals.afterTax)}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-muted">Hoa hồng 80%</p>
+                  <p className="font-mono-num text-sm font-bold" style={{ color: AMOUNT_COLORS.final80.solid }}>
+                    {formatVnd(totals.final80)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {pagedGroups.map((group) => {
               const isOpen = !!expanded[group.subId];
               return (
                 <div
@@ -383,29 +435,52 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
               );
             })}
 
-            <div className="bg-panel border-2 border-gold/60 rounded-2xl px-5 py-4">
-              <p className="text-sm font-bold text-gold mb-2">Tổng hoa hồng (tất cả sub ID)</p>
-              <div className="grid grid-cols-3 gap-1.5">
-                <div className="text-center">
-                  <p className="text-[10px] text-muted">Hoa hồng</p>
-                  <p className="font-mono-num text-sm font-bold" style={{ color: AMOUNT_COLORS.gross.solid }}>
-                    {formatVnd(totals.gross)}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-[10px] text-muted">Sau thuế -11%</p>
-                  <p className="font-mono-num text-sm font-bold" style={{ color: AMOUNT_COLORS.afterTax.solid }}>
-                    {formatVnd(totals.afterTax)}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-[10px] text-muted">Hoa hồng 80%</p>
-                  <p className="font-mono-num text-sm font-bold" style={{ color: AMOUNT_COLORS.final80.solid }}>
-                    {formatVnd(totals.final80)}
-                  </p>
-                </div>
+            {totalPages > 1 && (
+              <div className="flex flex-wrap items-center justify-center gap-1.5 bg-panel border border-border rounded-2xl px-5 py-5">
+                {pageWindowStart > 0 && (
+                  <button
+                    type="button"
+                    onClick={retreatPageWindow}
+                    className="w-8 h-8 rounded-full text-xs font-semibold text-muted hover:text-cream border border-border cursor-pointer"
+                    aria-label="Trang trước đó"
+                  >
+                    ‹
+                  </button>
+                )}
+                {Array.from({ length: Math.min(PAGE_WINDOW, totalPages - pageWindowStart) }).map(
+                  (_, i) => {
+                    const p = pageWindowStart + i + 1;
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => goToPage(p)}
+                        className={`w-8 h-8 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
+                          effectiveGroupPage === p
+                            ? "bg-highlight text-white"
+                            : "text-muted hover:text-cream border border-border"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    );
+                  }
+                )}
+                {pageWindowStart + PAGE_WINDOW < totalPages && (
+                  <button
+                    type="button"
+                    onClick={advancePageWindow}
+                    className="w-8 h-8 rounded-full text-xs font-semibold text-muted hover:text-cream border border-border cursor-pointer"
+                    aria-label="Xem thêm trang"
+                  >
+                    ›...
+                  </button>
+                )}
+                <span className="text-xs text-muted ml-2 font-mono-num">
+                  Trang {effectiveGroupPage}/{totalPages}
+                </span>
               </div>
-            </div>
+            )}
           </div>
         )}
 
