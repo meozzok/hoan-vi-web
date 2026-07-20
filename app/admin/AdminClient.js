@@ -16,8 +16,8 @@ const PAGE_WINDOW = 5;
 // 3 ô lọc/tổng hợp hiển thị phía trên danh sách sub ID.
 const FILTER_OPTIONS = [
   { key: "pending", label: "Đang chờ xử lý" },
-  { key: "completed", label: "Đã thanh toán" },
-  { key: "total", label: "Tổng hoa hồng" },
+  { key: "completed", label: "Đã hoàn thành" },
+  { key: "total", label: "Hoàn thành chia 8-2" },
 ];
 
 // 4 ô sắp xếp danh sách sub ID.
@@ -122,6 +122,23 @@ function CloseIcon({ className = "" }) {
   );
 }
 
+function CopyIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="12" height="12" rx="2" />
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12.5l4.5 4.5L19 7" />
+    </svg>
+  );
+}
+
 function ChevronIcon({ open }) {
   return (
     <svg
@@ -138,10 +155,39 @@ function ChevronIcon({ open }) {
   );
 }
 
-function OrderRow({ order }) {
-  const meta = statusMeta(order.status);
+// Nút sao chép dùng chung cho Sub ID và Mã đơn — bấm để copy vào clipboard,
+// tự đổi sang dấu tick trong 1.5s để admin biết đã copy thành công.
+function CopyButton({ text, copiedKey, activeKey, onCopy, className = "" }) {
+  if (!text) return null;
+  const isCopied = copiedKey === activeKey;
   return (
-    <div className="px-4 py-3.5 rounded-xl border border-border bg-surface/60">
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onCopy(text, activeKey);
+      }}
+      aria-label="Sao chép"
+      title="Sao chép"
+      className={`shrink-0 inline-flex items-center justify-center rounded-md text-muted hover:text-gold hover:bg-panel-2 transition-colors cursor-pointer active:scale-90 ${className}`}
+    >
+      {isCopied ? <CheckIcon className="w-3.5 h-3.5 text-gold" /> : <CopyIcon className="w-3.5 h-3.5" />}
+    </button>
+  );
+}
+
+function OrderRow({ order, searchQuery, copiedKey, onCopy }) {
+  const meta = statusMeta(order.status);
+  // Khi admin tìm bằng mã đơn, tô hồng đúng đơn khớp để dễ nhận ra giữa
+  // danh sách nhiều đơn của cùng 1 sub ID.
+  const q = (searchQuery || "").trim().toLowerCase();
+  const isSearchHit = q.length > 0 && (order.orderId || "").toLowerCase().includes(q);
+  return (
+    <div
+      className={`px-4 py-3.5 rounded-xl border transition-colors ${
+        isSearchHit ? "border-pink-400 bg-pink-50" : "border-border bg-surface/60"
+      }`}
+    >
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-bold min-w-0 truncate">
           🛍️ {truncateChars(order.productName, 60)}
@@ -153,7 +199,10 @@ function OrderRow({ order }) {
           {meta.label}
         </span>
       </div>
-      <p className="font-mono-num text-xs text-muted mt-1">Mã đơn: {order.orderId || "—"}</p>
+      <p className="font-mono-num text-xs text-muted mt-1 flex items-center gap-1">
+        Mã đơn: {order.orderId || "—"}
+        <CopyButton text={order.orderId} copiedKey={copiedKey} activeKey={`order-${order.orderId}`} onCopy={onCopy} className="w-4 h-4" />
+      </p>
 
       <div className="flex items-center gap-4 mt-1.5">
         <p className="text-[11px] text-muted">
@@ -209,7 +258,24 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("total");
   const [sortMode, setSortMode] = useState("newest");
+  const [copiedKey, setCopiedKey] = useState(null);
   const saveTimers = useRef({});
+  const copyResetTimer = useRef(null);
+
+  // Sao chép Sub ID/mã đơn vào clipboard, hiện dấu tick 1.5s rồi tự tắt.
+  const handleCopy = useCallback((text, key) => {
+    if (!text) return;
+    const done = () => {
+      setCopiedKey(key);
+      clearTimeout(copyResetTimer.current);
+      copyResetTimer.current = setTimeout(() => setCopiedKey(null), 1500);
+    };
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(done);
+    } else {
+      done();
+    }
+  }, []);
 
   // Sau khi hydrate xong, nạp thêm bản lưu trên trình duyệt — nếu tên nào
   // đã gõ trước đó nhưng chưa kịp đồng bộ lên server thì vẫn hiện lại đúng.
@@ -273,8 +339,8 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
     );
   }, [searchedGroups]);
 
-  // Ô lọc: Đang chờ xử lý / Đã thanh toán chỉ hiện các sub ID có phát sinh
-  // hoa hồng ở trạng thái tương ứng; Tổng hoa hồng hiện tất cả.
+  // Ô lọc: Đang chờ xử lý / Đã hoàn thành chỉ hiện các sub ID có phát sinh
+  // hoa hồng ở trạng thái tương ứng; Hoàn thành chia 8-2 hiện tất cả.
   const filteredGroups = useMemo(() => {
     if (statusFilter === "pending") return searchedGroups.filter((g) => g.stat.pending > 0);
     if (statusFilter === "completed") return searchedGroups.filter((g) => g.stat.completed > 0);
@@ -522,7 +588,10 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                       <ChevronIcon open={isOpen} />
                       <div className="min-w-0">
                         <p className="text-[11px] text-muted">Sub ID</p>
-                        <p className="font-mono-num text-sm font-bold truncate">{group.subId}</p>
+                        <p className="font-mono-num text-sm font-bold truncate flex items-center gap-1">
+                          {group.subId}
+                          <CopyButton text={group.subId} copiedKey={copiedKey} activeKey={`sub-${group.subId}`} onCopy={handleCopy} className="w-4 h-4" />
+                        </p>
                       </div>
                       <p className="text-[11px] text-muted ml-auto shrink-0">{group.orders.length} đơn</p>
                     </div>
@@ -552,7 +621,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                         className="text-center rounded-lg py-1.5"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.completed.border}`, background: GROUP_STAT_COLORS.completed.soft }}
                       >
-                        <p className="text-[10px] text-ink font-semibold">Đã thanh toán</p>
+                        <p className="text-[10px] text-ink font-semibold">Đã hoàn thành</p>
                         <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.completed.solid }}>
                           {formatVnd(group.stat.completed)}
                         </p>
@@ -561,7 +630,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                         className="text-center rounded-lg py-1.5"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.total.border}`, background: GROUP_STAT_COLORS.total.soft }}
                       >
-                        <p className="text-[10px] text-ink font-semibold">Tổng hoa hồng</p>
+                        <p className="text-[10px] text-ink font-semibold">Hoàn thành chia 8-2</p>
                         <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.total.solid }}>
                           {formatVnd(group.stat.total)}
                         </p>
@@ -572,7 +641,13 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                   {isOpen && (
                     <div className="flex flex-col gap-2 px-3 sm:px-4 pb-4">
                       {group.orders.map((order) => (
-                        <OrderRow key={rowKeyOf(order)} order={order} />
+                        <OrderRow
+                          key={rowKeyOf(order)}
+                          order={order}
+                          searchQuery={searchQuery}
+                          copiedKey={copiedKey}
+                          onCopy={handleCopy}
+                        />
                       ))}
                     </div>
                   )}
