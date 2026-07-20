@@ -408,8 +408,9 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
           </div>
         </div>
 
-        {/* Ô tìm kiếm + 3 ô lọc/tổng hợp + 4 ô sắp xếp */}
-        <div className="flex flex-col gap-2 mb-4">
+        {/* Ô tìm kiếm + 3 ô lọc/tổng hợp + 4 ô sắp xếp — dính lại phía trên
+            khi cuộn trang xuống, không bị trôi mất. */}
+        <div className="sticky top-0 z-30 -mx-4 px-4 pt-2 pb-2 sm:mx-0 sm:px-0 sticky-blur-bg-green flex flex-col gap-2 mb-4">
           <div className="relative flex items-center bg-surface border border-border rounded-full">
             <input
               type="text"
@@ -467,7 +468,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
             })}
           </div>
 
-          <div className="flex items-center gap-1.5 bg-panel border border-border rounded-full px-1.5 py-1.5 overflow-x-auto scrollbar-thin">
+          <div className="grid grid-cols-4 gap-1.5 bg-panel border border-border rounded-full px-1.5 py-1.5">
             {SORT_OPTIONS.map((s) => {
               const active = sortMode === s.key;
               return (
@@ -475,7 +476,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                   key={s.key}
                   type="button"
                   onClick={() => setSortMode(s.key)}
-                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer active:scale-95 ${
+                  className={`px-1 py-1 rounded-full text-[11px] sm:text-xs font-bold transition-all cursor-pointer active:scale-95 ${
                     active ? "bg-highlight text-white" : "text-muted hover:text-cream"
                   }`}
                 >
@@ -496,7 +497,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
             {pagedGroups.map((group) => {
               const isOpen = !!expanded[group.subId];
               return (
@@ -504,6 +505,8 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                   key={group.subId}
                   className="bg-panel border border-border rounded-xl overflow-hidden shadow-sm shadow-black/5"
                 >
+                  {/* Thanh ngang đỏ để dễ phân biệt ranh giới từng ô sub ID */}
+                  <div className="h-[3px] w-full bg-danger" />
                   <div
                     role="button"
                     tabIndex={0}

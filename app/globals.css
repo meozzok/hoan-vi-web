@@ -366,6 +366,13 @@ body {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
+/* Bản nền mờ tông xanh lá — dùng cho thanh tìm kiếm/lọc/sắp xếp "dính"
+   (sticky) trên trang Admin (nền trắng-xanh lá thay vì tím). */
+.sticky-blur-bg-green {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
 /* Dòng cảnh báo "⚠️ Lưu ý quan trọng để được hoàn tiền" — nền vàng nhạt sáng,
    không viền. Tiêu đề + 5 gạch đầu dòng nằm chung 1 khối (không tách ô). */
 .notice-box {
