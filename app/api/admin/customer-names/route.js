@@ -12,15 +12,15 @@ export async function POST(request) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const orderId = typeof body?.orderId === "string" ? body.orderId : "";
+  const subId = typeof body?.subId === "string" ? body.subId : "";
   const name = typeof body?.name === "string" ? body.name : "";
 
-  if (!orderId) {
-    return NextResponse.json({ error: "Thiếu orderId." }, { status: 400 });
+  if (!subId) {
+    return NextResponse.json({ error: "Thiếu subId." }, { status: 400 });
   }
 
   try {
-    const customerNames = await setCustomerName(orderId, name);
+    const customerNames = await setCustomerName(subId, name);
     return NextResponse.json({ ok: true, customerNames });
   } catch (err) {
     return NextResponse.json(

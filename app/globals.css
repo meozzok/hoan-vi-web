@@ -149,6 +149,42 @@ body {
   background: #f1e6ff;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Bảng màu Xanh Lá Dịu (nhẹ mắt, tông xanh lá + trắng) — dùng
+   riêng cho trang /admin, tách biệt bảng màu tím của khách hàng.
+   ───────────────────────────────────────────────────────────── */
+.admin-green {
+  --ink: #164430;
+  --surface: #ffffff;
+  --panel: #ffffff;
+  --panel-2: #e9f7ef;
+  --border: #bfe6cf;
+  --gold: #2f9e63;
+  --gold-soft: #5cbf8a;
+  --mint: #34c288;
+  --cream: #163a29;
+  --muted: #6f9382;
+  --danger: #d9534f;
+  --highlight: #1f7a4d;
+
+  --bg-grad-1: #ffffff;
+  --bg-grad-2: #e9f9f0;
+  --bg-grad-3: #cdf0dc;
+
+  background-image:
+    radial-gradient(ellipse 900px 520px at 100% -8%, rgba(180, 240, 205, 0.55), transparent 60%),
+    radial-gradient(ellipse 700px 460px at -5% 105%, rgba(150, 225, 185, 0.4), transparent 55%),
+    linear-gradient(160deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 45%, var(--bg-grad-3) 100%);
+  background-attachment: fixed;
+  color: var(--cream);
+  min-height: 100vh;
+}
+
+.admin-green .ticket-notch::before,
+.admin-green .ticket-notch::after {
+  background: #eafbf1;
+}
+
 /* Nhãn logo/avatar thương hiệu — thay cho bộ chọn 7 màu cũ */
 .brand-badge {
   width: 44px;

@@ -36,7 +36,7 @@ export default function AdminLoginGate() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4">
+    <main className="admin-green min-h-screen flex items-center justify-center px-4">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-sm bg-panel border border-border rounded-2xl p-7 shadow-xl shadow-black/10"
