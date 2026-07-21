@@ -15,11 +15,11 @@ const LOCAL_NAMES_KEY = "hoanvi_admin_customer_names_v1";
 const PAGE_SIZE = 10;
 const PAGE_WINDOW = 5;
 
-// 3 ô lọc/tổng hợp hiển thị phía trên danh sách sub ID.
+// 4 ô lọc/tổng hợp hiển thị phía trên danh sách sub ID.
 const FILTER_OPTIONS = [
+  { key: "tongHH", label: "Tổng HH" },
   { key: "pending", label: "Đang chờ xử lý" },
   { key: "completed", label: "Đã hoàn thành" },
-  { key: "total", label: "HT chia 8-2" },
   { key: "daNhan", label: "Đã nhận" },
 ];
 
@@ -103,9 +103,9 @@ const AMOUNT_COLORS = {
 
 // 4 ô hoa hồng theo trạng thái, hiển thị cho từng Sub ID.
 const GROUP_STAT_COLORS = {
+  tongHH: { solid: "#0ecb81", border: "rgba(14,203,129,0.35)", soft: "rgba(14,203,129,0.08)" },
   pending: { solid: "#c8930a", border: "rgba(200,147,10,0.30)", soft: "rgba(200,147,10,0.07)" },
   completed: { solid: "#1f9d5c", border: "rgba(31,157,92,0.30)", soft: "rgba(31,157,92,0.07)" },
-  total: { solid: "#0ecb81", border: "rgba(14,203,129,0.35)", soft: "rgba(14,203,129,0.08)" },
   daNhan: { solid: "#2f6fed", border: "rgba(47,111,237,0.30)", soft: "rgba(47,111,237,0.07)" },
 };
 
@@ -303,15 +303,15 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
       // "Đã nhận" không tính từ danh sách đơn (donhang) — nó đến từ 1 nguồn
       // dữ liệu riêng (danhan_by_subid) mà bot ghi mỗi khi Admin chuyển tiền
       // thực tế cho khách, nên lấy thẳng từ daNhanMap theo sub ID.
-      const stat = { pending: 0, completed: 0, total: 0, daNhan: daNhanMap[subId] || 0 };
+      const stat = { pending: 0, completed: 0, tongHH: 0, daNhan: daNhanMap[subId] || 0 };
       for (const o of list) {
         const amount = o.final80 || 0;
         const kind = classifyStatus(o.status);
         if (kind === "pending") stat.pending += amount;
         else if (kind === "completed") stat.completed += amount;
       }
-      // HT chia 8-2 = tiền ở ô Đã hoàn thành, trừ 11% thuế rồi nhân 80%.
-      stat.total = Math.round(Math.round(stat.completed * 0.89) * 0.8);
+      // Tổng HH = tổng của 3 ô: Đang chờ xử lý + Đã hoàn thành + Đã nhận.
+      stat.tongHH = stat.pending + stat.completed + stat.daNhan;
       // `orders` gốc đã được sắp xếp mới nhất trước, nên đơn đầu tiên gặp
       // trong mỗi nhóm là đơn mới nhất và đơn cuối cùng là đơn cũ nhất.
       const latestOrderedAt = list[0]?.orderedAt || "";
@@ -336,17 +336,17 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
     });
   }, [groups, searchQuery, customerNames]);
 
-  // Tổng hợp số liệu cho 3 ô lọc — tính trên tập đã qua tìm kiếm, không phụ
+  // Tổng hợp số liệu cho 4 ô lọc — tính trên tập đã qua tìm kiếm, không phụ
   // thuộc vào ô lọc trạng thái đang chọn.
   const filterTotals = useMemo(() => {
     return searchedGroups.reduce(
       (acc, g) => ({
         pending: acc.pending + g.stat.pending,
         completed: acc.completed + g.stat.completed,
-        total: acc.total + g.stat.total,
+        tongHH: acc.tongHH + g.stat.tongHH,
         daNhan: acc.daNhan + g.stat.daNhan,
       }),
-      { pending: 0, completed: 0, total: 0, daNhan: 0 }
+      { pending: 0, completed: 0, tongHH: 0, daNhan: 0 }
     );
   }, [searchedGroups]);
 
@@ -355,7 +355,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
   const filteredGroups = useMemo(() => {
     if (statusFilter === "pending") return searchedGroups.filter((g) => g.stat.pending > 0);
     if (statusFilter === "completed") return searchedGroups.filter((g) => g.stat.completed > 0);
-    if (statusFilter === "total") return searchedGroups.filter((g) => g.stat.total > 0);
+    if (statusFilter === "tongHH") return searchedGroups.filter((g) => g.stat.tongHH > 0);
     if (statusFilter === "daNhan") return searchedGroups.filter((g) => g.stat.daNhan > 0);
     return searchedGroups;
   }, [searchedGroups, statusFilter]);
@@ -365,8 +365,8 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
   const sortedGroups = useMemo(() => {
     const arr = [...filteredGroups];
     arr.sort((a, b) => {
-      if (sortMode === "most") return b.stat.total - a.stat.total;
-      if (sortMode === "least") return a.stat.total - b.stat.total;
+      if (sortMode === "most") return b.stat.tongHH - a.stat.tongHH;
+      if (sortMode === "least") return a.stat.tongHH - b.stat.tongHH;
       if (sortMode === "oldest") return a.latestOrderedAt.localeCompare(b.latestOrderedAt);
       return b.latestOrderedAt.localeCompare(a.latestOrderedAt);
     });
@@ -644,6 +644,15 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
                     <div className="grid grid-cols-4 gap-1 mt-3">
                       <div
                         className="text-center rounded-lg py-1 px-0.5"
+                        style={{ border: `1px solid ${GROUP_STAT_COLORS.tongHH.border}`, background: GROUP_STAT_COLORS.tongHH.soft }}
+                      >
+                        <p className="text-[8.5px] leading-tight text-ink font-semibold">Tổng HH</p>
+                        <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROUP_STAT_COLORS.tongHH.solid }}>
+                          {formatVnd(group.stat.tongHH)}
+                        </p>
+                      </div>
+                      <div
+                        className="text-center rounded-lg py-1 px-0.5"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.pending.border}`, background: GROUP_STAT_COLORS.pending.soft }}
                       >
                         <p className="text-[8.5px] leading-tight text-ink font-semibold">Đang chờ xử lý</p>
@@ -658,15 +667,6 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
                         <p className="text-[8.5px] leading-tight text-ink font-semibold">Đã hoàn thành</p>
                         <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROUP_STAT_COLORS.completed.solid }}>
                           {formatVnd(group.stat.completed)}
-                        </p>
-                      </div>
-                      <div
-                        className="text-center rounded-lg py-1 px-0.5"
-                        style={{ border: `1px solid ${GROUP_STAT_COLORS.total.border}`, background: GROUP_STAT_COLORS.total.soft }}
-                      >
-                        <p className="text-[8.5px] leading-tight text-ink font-semibold">HT chia 8-2</p>
-                        <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROUP_STAT_COLORS.total.solid }}>
-                          {formatVnd(group.stat.total)}
                         </p>
                       </div>
                       <div
