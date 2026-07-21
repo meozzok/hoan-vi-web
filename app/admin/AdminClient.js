@@ -15,11 +15,15 @@ const LOCAL_NAMES_KEY = "hoanvi_admin_customer_names_v1";
 const PAGE_SIZE = 10;
 const PAGE_WINDOW = 5;
 
-// 4 ô lọc/tổng hợp hiển thị phía trên danh sách sub ID.
+// 5 ô lọc/tổng hợp hiển thị phía trên danh sách sub ID — 3 ô đầu (Đang chờ
+// xử lý / Tổng HH / Đã hoàn thành) 1 hàng, Tổng HH nằm giữa và tô đậm hơn;
+// 2 ô sau (Cần thanh toán / Đã nhận) rải xuống hàng riêng bên dưới, giống
+// cách bố trí ở từng thẻ Sub ID.
 const FILTER_OPTIONS = [
-  { key: "tongHH", label: "Tổng HH" },
   { key: "pending", label: "Đang chờ xử lý" },
+  { key: "tongHH", label: "Tổng HH", emphasis: true },
   { key: "completed", label: "Đã hoàn thành" },
+  { key: "canThanhToan", label: "Cần thanh toán" },
   { key: "daNhan", label: "Đã nhận" },
 ];
 
@@ -117,8 +121,6 @@ const GROSS_STAT_COLORS = {
   grossTongHH: { solid: "#0ecb81", border: "rgba(14,203,129,0.30)", soft: "rgba(14,203,129,0.06)" },
   grossPending: { solid: "#c8930a", border: "rgba(200,147,10,0.30)", soft: "rgba(200,147,10,0.06)" },
   grossCompleted: { solid: "#1f9d5c", border: "rgba(31,157,92,0.30)", soft: "rgba(31,157,92,0.06)" },
-  canThanhToan: { solid: "#d9534f", border: "rgba(217,83,79,0.30)", soft: "rgba(217,83,79,0.06)" },
-  daNhan: { solid: "#2f6fed", border: "rgba(47,111,237,0.30)", soft: "rgba(47,111,237,0.06)" },
 };
 
 function SearchIcon({ className = "" }) {
@@ -328,8 +330,9 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
           stat.grossCompleted += gross;
         }
       }
-      // Tổng HH = tổng của 3 ô: Đang chờ xử lý + Đã hoàn thành + Đã nhận.
-      stat.tongHH = stat.pending + stat.completed + stat.daNhan;
+      // Tổng HH = tổng của 2 ô: Đang chờ xử lý + Đã hoàn thành (không cộng
+      // Đã nhận nữa — Đã nhận là tiền đã chuyển thực tế, tách riêng).
+      stat.tongHH = stat.pending + stat.completed;
       // Cần thanh toán (riêng theo sub ID) = Đã hoàn thành thực nhận - Đã nhận.
       stat.canThanhToan = stat.completed - stat.daNhan;
       // `orders` gốc đã được sắp xếp mới nhất trước, nên đơn đầu tiên gặp
@@ -356,7 +359,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
     });
   }, [groups, searchQuery, customerNames]);
 
-  // Tổng hợp số liệu cho 4 ô lọc — tính trên tập đã qua tìm kiếm, không phụ
+  // Tổng hợp số liệu cho 5 ô lọc — tính trên tập đã qua tìm kiếm, không phụ
   // thuộc vào ô lọc trạng thái đang chọn.
   const filterTotals = useMemo(() => {
     return searchedGroups.reduce(
@@ -365,16 +368,17 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
         completed: acc.completed + g.stat.completed,
         tongHH: acc.tongHH + g.stat.tongHH,
         daNhan: acc.daNhan + g.stat.daNhan,
+        canThanhToan: acc.canThanhToan + g.stat.canThanhToan,
       }),
-      { pending: 0, completed: 0, tongHH: 0, daNhan: 0 }
+      { pending: 0, completed: 0, tongHH: 0, daNhan: 0, canThanhToan: 0 }
     );
   }, [searchedGroups]);
 
-  // Bảng tổng hợp cố định phía trên — số liệu GỐC (chưa trừ 11% thuế, chưa
-  // chia 8-2), tính trên toàn bộ danh sách đã qua tìm kiếm, không phụ thuộc
-  // ô lọc đang chọn. "Vàng Rơi" = phần hoa hồng bị mất đi giữa Đã hoàn thành
-  // gốc và Đã hoàn thành thực nhận (sau thuế + chia 8-2). "Cần thanh toán" =
-  // Đã hoàn thành thực nhận - Đã nhận (tiền đã chuyển thực tế cho khách).
+  // Bảng tổng hợp "Hoa hồng chưa trừ thuế phí" cố định phía trên — số liệu
+  // GỐC (chưa trừ 11% thuế, chưa chia 8-2), tính trên toàn bộ danh sách đã
+  // qua tìm kiếm, không phụ thuộc ô lọc đang chọn. "Vàng Rơi"/"Chiến lợi
+  // phẩm của tôi" = phần hoa hồng bị mất đi giữa Đã hoàn thành gốc và Đã
+  // hoàn thành thực nhận (sau thuế + chia 8-2).
   const grossTotals = useMemo(() => {
     const acc = searchedGroups.reduce(
       (a, g) => ({
@@ -388,7 +392,6 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
       grossCompleted: acc.grossCompleted,
       grossTongHH: acc.grossPending + acc.grossCompleted,
       vangRoi: acc.grossCompleted - filterTotals.completed,
-      canThanhToan: filterTotals.completed - filterTotals.daNhan,
     };
   }, [searchedGroups, filterTotals]);
 
@@ -398,6 +401,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
     if (statusFilter === "pending") return searchedGroups.filter((g) => g.stat.pending > 0);
     if (statusFilter === "completed") return searchedGroups.filter((g) => g.stat.completed > 0);
     if (statusFilter === "tongHH") return searchedGroups.filter((g) => g.stat.tongHH > 0);
+    if (statusFilter === "canThanhToan") return searchedGroups.filter((g) => g.stat.canThanhToan > 0);
     if (statusFilter === "daNhan") return searchedGroups.filter((g) => g.stat.daNhan > 0);
     return searchedGroups;
   }, [searchedGroups, statusFilter]);
@@ -561,20 +565,20 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
           <div className="grid grid-cols-3 gap-1">
             <div
               className="text-center rounded-lg py-1 px-0.5"
-              style={{ border: `1px solid ${GROSS_STAT_COLORS.grossTongHH.border}`, background: GROSS_STAT_COLORS.grossTongHH.soft }}
-            >
-              <p className="text-[8.5px] leading-tight text-ink font-semibold">Tổng HH</p>
-              <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.grossTongHH.solid }}>
-                {formatVnd(grossTotals.grossTongHH)}
-              </p>
-            </div>
-            <div
-              className="text-center rounded-lg py-1 px-0.5"
               style={{ border: `1px solid ${GROSS_STAT_COLORS.grossPending.border}`, background: GROSS_STAT_COLORS.grossPending.soft }}
             >
               <p className="text-[8.5px] leading-tight text-ink font-semibold">Đang chờ xử lý</p>
               <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.grossPending.solid }}>
                 {formatVnd(grossTotals.grossPending)}
+              </p>
+            </div>
+            <div
+              className="text-center rounded-lg py-1.5 px-0.5"
+              style={{ border: `1.5px solid ${GROSS_STAT_COLORS.grossTongHH.solid}`, background: GROSS_STAT_COLORS.grossTongHH.soft, boxShadow: `0 2px 8px ${GROSS_STAT_COLORS.grossTongHH.soft}` }}
+            >
+              <p className="text-[9px] leading-tight text-ink font-extrabold">Tổng HH</p>
+              <p className="font-mono-num text-xs leading-tight font-extrabold" style={{ color: GROSS_STAT_COLORS.grossTongHH.solid }}>
+                {formatVnd(grossTotals.grossTongHH)}
               </p>
             </div>
             <div
@@ -587,30 +591,11 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-1">
-            <div
-              className="text-center rounded-lg py-1 px-0.5"
-              style={{ border: `1px solid ${GROSS_STAT_COLORS.canThanhToan.border}`, background: GROSS_STAT_COLORS.canThanhToan.soft }}
-            >
-              <p className="text-[8.5px] leading-tight text-ink font-semibold">Cần thanh toán</p>
-              <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.canThanhToan.solid }}>
-                {formatVnd(grossTotals.canThanhToan)}
-              </p>
-            </div>
-            <div
-              className="text-center rounded-lg py-1 px-0.5"
-              style={{ border: `1px solid ${GROSS_STAT_COLORS.daNhan.border}`, background: GROSS_STAT_COLORS.daNhan.soft }}
-            >
-              <p className="text-[8.5px] leading-tight text-ink font-semibold">Đã nhận</p>
-              <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.daNhan.solid }}>
-                {formatVnd(filterTotals.daNhan)}
-              </p>
-            </div>
-          </div>
         </div>
 
-        {/* Ô tìm kiếm + 4 ô lọc + 4 ô sắp xếp — dính lại phía trên
-            khi cuộn trang xuống, không bị trôi mất. */}
+        {/* Ô tìm kiếm + 5 ô lọc (Đang chờ xử lý/Tổng HH/Đã hoàn thành 1 hàng,
+            Cần thanh toán/Đã nhận rải xuống hàng riêng bên dưới) + 4 ô sắp
+            xếp — dính lại phía trên khi cuộn trang xuống, không bị trôi mất. */}
         <div className="sticky top-0 z-30 -mx-4 px-4 pt-2 pb-2 sm:mx-0 sm:px-0 sticky-blur-bg-green flex flex-col gap-2 mb-4">
           <div className="relative flex items-center bg-surface border border-border rounded-full">
             <input
@@ -639,8 +624,39 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
             </span>
           </div>
 
-          <div className="grid grid-cols-4 gap-1">
-            {FILTER_OPTIONS.map((f) => {
+          <div className="grid grid-cols-3 gap-1">
+            {FILTER_OPTIONS.slice(0, 3).map((f) => {
+              const active = statusFilter === f.key;
+              const colors = GROUP_STAT_COLORS[f.key];
+              const amount = filterTotals[f.key];
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setStatusFilter((prev) => (prev === f.key ? null : f.key))}
+                  className={`rounded-lg text-center transition-all cursor-pointer active:scale-95 ${f.emphasis ? "py-1.5 px-0.5" : "py-1 px-0.5"}`}
+                  style={
+                    active
+                      ? { background: colors.solid, boxShadow: `0 3px 10px ${colors.soft}` }
+                      : f.emphasis
+                        ? { background: colors.soft, border: `1.5px solid ${colors.solid}`, boxShadow: `0 2px 8px ${colors.soft}` }
+                        : { background: colors.soft, border: `1px solid ${colors.border}` }
+                  }
+                >
+                  <p className={`leading-tight font-semibold ${f.emphasis ? "text-[9px] font-extrabold" : "text-[8.5px]"} ${active ? "text-white/90" : "text-ink"}`}>{f.label}</p>
+                  <p
+                    className={`font-mono-num leading-tight font-bold ${f.emphasis ? "text-xs font-extrabold" : "text-[10.5px]"}`}
+                    style={{ color: active ? "#fff" : colors.solid }}
+                  >
+                    {formatVnd(amount)}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-2 gap-1">
+            {FILTER_OPTIONS.slice(3, 5).map((f) => {
               const active = statusFilter === f.key;
               const colors = GROUP_STAT_COLORS[f.key];
               const amount = filterTotals[f.key];
@@ -754,20 +770,20 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
                     <div className="grid grid-cols-3 gap-1 mt-3">
                       <div
                         className="text-center rounded-lg py-1 px-0.5"
-                        style={{ border: `1px solid ${GROUP_STAT_COLORS.tongHH.border}`, background: GROUP_STAT_COLORS.tongHH.soft }}
-                      >
-                        <p className="text-[8.5px] leading-tight text-ink font-semibold">Tổng HH</p>
-                        <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROUP_STAT_COLORS.tongHH.solid }}>
-                          {formatVnd(group.stat.tongHH)}
-                        </p>
-                      </div>
-                      <div
-                        className="text-center rounded-lg py-1 px-0.5"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.pending.border}`, background: GROUP_STAT_COLORS.pending.soft }}
                       >
                         <p className="text-[8.5px] leading-tight text-ink font-semibold">Đang chờ xử lý</p>
                         <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROUP_STAT_COLORS.pending.solid }}>
                           {formatVnd(group.stat.pending)}
+                        </p>
+                      </div>
+                      <div
+                        className="text-center rounded-lg py-1.5 px-0.5"
+                        style={{ border: `1.5px solid ${GROUP_STAT_COLORS.tongHH.solid}`, background: GROUP_STAT_COLORS.tongHH.soft, boxShadow: `0 2px 8px ${GROUP_STAT_COLORS.tongHH.soft}` }}
+                      >
+                        <p className="text-[9px] leading-tight text-ink font-extrabold">Tổng HH</p>
+                        <p className="font-mono-num text-xs leading-tight font-extrabold" style={{ color: GROUP_STAT_COLORS.tongHH.solid }}>
+                          {formatVnd(group.stat.tongHH)}
                         </p>
                       </div>
                       <div
