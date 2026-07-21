@@ -19,7 +19,7 @@ const PAGE_WINDOW = 5;
 const FILTER_OPTIONS = [
   { key: "pending", label: "Đang chờ xử lý" },
   { key: "completed", label: "Đã hoàn thành" },
-  { key: "total", label: "Hoàn thành chia 8-2" },
+  { key: "total", label: "HT chia 8-2" },
   { key: "daNhan", label: "Đã nhận" },
 ];
 
@@ -306,11 +306,12 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
       const stat = { pending: 0, completed: 0, total: 0, daNhan: daNhanMap[subId] || 0 };
       for (const o of list) {
         const amount = o.final80 || 0;
-        stat.total += amount;
         const kind = classifyStatus(o.status);
         if (kind === "pending") stat.pending += amount;
         else if (kind === "completed") stat.completed += amount;
       }
+      // HT chia 8-2 = tiền ở ô Đã hoàn thành, trừ 11% thuế rồi nhân 80%.
+      stat.total = Math.round(Math.round(stat.completed * 0.89) * 0.8);
       // `orders` gốc đã được sắp xếp mới nhất trước, nên đơn đầu tiên gặp
       // trong mỗi nhóm là đơn mới nhất và đơn cuối cùng là đơn cũ nhất.
       const latestOrderedAt = list[0]?.orderedAt || "";
@@ -507,7 +508,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Nhập mã đơn, tên sản phẩm hoặc sub ID..."
-              className="w-full bg-transparent pl-4 pr-16 py-2.5 text-sm outline-none placeholder:text-muted/60 text-cream"
+              className="w-full bg-transparent pl-4 pr-16 py-2.5 text-base sm:text-sm outline-none placeholder:text-muted/60 text-cream"
             />
             {searchQuery && (
               <button
@@ -600,6 +601,11 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
                     tabIndex={0}
                     onClick={() => toggleGroup(group.subId)}
                     onKeyDown={(e) => {
+                      // Bỏ qua khi phím bấm phát sinh từ ô nhập tên khách (input) —
+                      // nếu không, phím Cách/Enter khi đang gõ tên sẽ bị div cha này
+                      // "nuốt" mất để đóng/mở sub ID thay vì gõ được vào ô.
+                      const tag = e.target.tagName;
+                      if (tag === "INPUT" || tag === "TEXTAREA") return;
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
                         toggleGroup(group.subId);
@@ -626,7 +632,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
                         value={customerNames[group.subId] || ""}
                         onChange={(e) => handleNameChange(group.subId, e.target.value)}
                         placeholder="Tự nhập tên khách..."
-                        className="w-full bg-surface border border-border rounded-lg px-3 py-1.5 text-sm text-cream placeholder:text-muted/60 outline-none focus:border-gold transition-colors"
+                        className="w-full bg-surface border border-border rounded-lg px-3 py-1.5 text-base sm:text-sm text-cream placeholder:text-muted/60 outline-none focus:border-gold transition-colors"
                       />
                       {saveErrorKeys[group.subId] && (
                         <p className="text-[11px] text-danger mt-1">
@@ -658,7 +664,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
                         className="text-center rounded-lg py-1 px-0.5"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.total.border}`, background: GROUP_STAT_COLORS.total.soft }}
                       >
-                        <p className="text-[8.5px] leading-tight text-ink font-semibold">Hoàn thành chia 8-2</p>
+                        <p className="text-[8.5px] leading-tight text-ink font-semibold">HT chia 8-2</p>
                         <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROUP_STAT_COLORS.total.solid }}>
                           {formatVnd(group.stat.total)}
                         </p>
