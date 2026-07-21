@@ -109,6 +109,18 @@ const GROUP_STAT_COLORS = {
   daNhan: { solid: "#2f6fed", border: "rgba(47,111,237,0.30)", soft: "rgba(47,111,237,0.07)" },
 };
 
+// Bảng tổng hợp GỐC cố định phía trên ô tìm kiếm (chỉ để xem, không bấm lọc
+// được) — Vàng Rơi nổi bật màu hổ phách, 3 ô gốc + Cần thanh toán/Đã nhận
+// dùng tông nhạt hơn để không lấn át các ô lọc bên dưới.
+const VANG_ROI_COLOR = { solid: "#b8860b", border: "rgba(184,134,11,0.35)", soft: "rgba(184,134,11,0.10)" };
+const GROSS_STAT_COLORS = {
+  grossTongHH: { solid: "#0ecb81", border: "rgba(14,203,129,0.30)", soft: "rgba(14,203,129,0.06)" },
+  grossPending: { solid: "#c8930a", border: "rgba(200,147,10,0.30)", soft: "rgba(200,147,10,0.06)" },
+  grossCompleted: { solid: "#1f9d5c", border: "rgba(31,157,92,0.30)", soft: "rgba(31,157,92,0.06)" },
+  canThanhToan: { solid: "#d9534f", border: "rgba(217,83,79,0.30)", soft: "rgba(217,83,79,0.06)" },
+  daNhan: { solid: "#2f6fed", border: "rgba(47,111,237,0.30)", soft: "rgba(47,111,237,0.06)" },
+};
+
 function SearchIcon({ className = "" }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -303,12 +315,18 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
       // "Đã nhận" không tính từ danh sách đơn (donhang) — nó đến từ 1 nguồn
       // dữ liệu riêng (danhan_by_subid) mà bot ghi mỗi khi Admin chuyển tiền
       // thực tế cho khách, nên lấy thẳng từ daNhanMap theo sub ID.
-      const stat = { pending: 0, completed: 0, tongHH: 0, daNhan: daNhanMap[subId] || 0 };
+      const stat = { pending: 0, completed: 0, tongHH: 0, daNhan: daNhanMap[subId] || 0, grossPending: 0, grossCompleted: 0 };
       for (const o of list) {
         const amount = o.final80 || 0;
+        const gross = o.gross || 0;
         const kind = classifyStatus(o.status);
-        if (kind === "pending") stat.pending += amount;
-        else if (kind === "completed") stat.completed += amount;
+        if (kind === "pending") {
+          stat.pending += amount;
+          stat.grossPending += gross;
+        } else if (kind === "completed") {
+          stat.completed += amount;
+          stat.grossCompleted += gross;
+        }
       }
       // Tổng HH = tổng của 3 ô: Đang chờ xử lý + Đã hoàn thành + Đã nhận.
       stat.tongHH = stat.pending + stat.completed + stat.daNhan;
@@ -349,6 +367,28 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
       { pending: 0, completed: 0, tongHH: 0, daNhan: 0 }
     );
   }, [searchedGroups]);
+
+  // Bảng tổng hợp cố định phía trên — số liệu GỐC (chưa trừ 11% thuế, chưa
+  // chia 8-2), tính trên toàn bộ danh sách đã qua tìm kiếm, không phụ thuộc
+  // ô lọc đang chọn. "Vàng Rơi" = phần hoa hồng bị mất đi giữa Đã hoàn thành
+  // gốc và Đã hoàn thành thực nhận (sau thuế + chia 8-2). "Cần thanh toán" =
+  // Đã hoàn thành thực nhận - Đã nhận (tiền đã chuyển thực tế cho khách).
+  const grossTotals = useMemo(() => {
+    const acc = searchedGroups.reduce(
+      (a, g) => ({
+        grossPending: a.grossPending + g.stat.grossPending,
+        grossCompleted: a.grossCompleted + g.stat.grossCompleted,
+      }),
+      { grossPending: 0, grossCompleted: 0 }
+    );
+    return {
+      grossPending: acc.grossPending,
+      grossCompleted: acc.grossCompleted,
+      grossTongHH: acc.grossPending + acc.grossCompleted,
+      vangRoi: acc.grossCompleted - filterTotals.completed,
+      canThanhToan: filterTotals.completed - filterTotals.daNhan,
+    };
+  }, [searchedGroups, filterTotals]);
 
   // Ô lọc: mỗi ô chỉ hiện các sub ID có phát sinh số tiền tương ứng > 0;
   // khi không chọn ô nào (statusFilter = null) thì hiện tất cả.
@@ -502,6 +542,70 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
         {/* Ô tìm kiếm + 3 ô lọc/tổng hợp + 4 ô sắp xếp — dính lại phía trên
             khi cuộn trang xuống, không bị trôi mất. */}
         <div className="sticky top-0 z-30 -mx-4 px-4 pt-2 pb-2 sm:mx-0 sm:px-0 sticky-blur-bg-green flex flex-col gap-2 mb-4">
+          {/* Bảng tổng hợp GỐC (chưa trừ 11% thuế, chưa chia 8-2) — chỉ để
+              xem, không bấm lọc được. Nằm phía trên ô tìm kiếm, cùng dính
+              cố định khi cuộn. */}
+          <div className="bg-panel border border-border rounded-2xl p-2 flex flex-col gap-1.5">
+            <div
+              className="rounded-xl py-2 px-2 text-center"
+              style={{ background: VANG_ROI_COLOR.soft, border: `1px solid ${VANG_ROI_COLOR.border}` }}
+            >
+              <p className="text-[11px] font-bold text-ink">🪙 Vàng Rơi</p>
+              <p className="font-mono-num text-base font-extrabold" style={{ color: VANG_ROI_COLOR.solid }}>
+                {formatVnd(grossTotals.vangRoi)}
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+              <div
+                className="text-center rounded-lg py-1 px-0.5"
+                style={{ border: `1px solid ${GROSS_STAT_COLORS.grossTongHH.border}`, background: GROSS_STAT_COLORS.grossTongHH.soft }}
+              >
+                <p className="text-[8.5px] leading-tight text-ink font-semibold">Tổng HH</p>
+                <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.grossTongHH.solid }}>
+                  {formatVnd(grossTotals.grossTongHH)}
+                </p>
+              </div>
+              <div
+                className="text-center rounded-lg py-1 px-0.5"
+                style={{ border: `1px solid ${GROSS_STAT_COLORS.grossPending.border}`, background: GROSS_STAT_COLORS.grossPending.soft }}
+              >
+                <p className="text-[8.5px] leading-tight text-ink font-semibold">Đang chờ xử lý</p>
+                <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.grossPending.solid }}>
+                  {formatVnd(grossTotals.grossPending)}
+                </p>
+              </div>
+              <div
+                className="text-center rounded-lg py-1 px-0.5"
+                style={{ border: `1px solid ${GROSS_STAT_COLORS.grossCompleted.border}`, background: GROSS_STAT_COLORS.grossCompleted.soft }}
+              >
+                <p className="text-[8.5px] leading-tight text-ink font-semibold">Đã hoàn thành</p>
+                <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.grossCompleted.solid }}>
+                  {formatVnd(grossTotals.grossCompleted)}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+              <div
+                className="text-center rounded-lg py-1 px-0.5"
+                style={{ border: `1px solid ${GROSS_STAT_COLORS.canThanhToan.border}`, background: GROSS_STAT_COLORS.canThanhToan.soft }}
+              >
+                <p className="text-[8.5px] leading-tight text-ink font-semibold">Cần thanh toán</p>
+                <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.canThanhToan.solid }}>
+                  {formatVnd(grossTotals.canThanhToan)}
+                </p>
+              </div>
+              <div
+                className="text-center rounded-lg py-1 px-0.5"
+                style={{ border: `1px solid ${GROSS_STAT_COLORS.daNhan.border}`, background: GROSS_STAT_COLORS.daNhan.soft }}
+              >
+                <p className="text-[8.5px] leading-tight text-ink font-semibold">Đã nhận</p>
+                <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.daNhan.solid }}>
+                  {formatVnd(filterTotals.daNhan)}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="relative flex items-center bg-surface border border-border rounded-full">
             <input
               type="text"
