@@ -106,13 +106,13 @@ const GROUP_STAT_COLORS = {
   tongHH: { solid: "#0ecb81", border: "rgba(14,203,129,0.35)", soft: "rgba(14,203,129,0.08)" },
   pending: { solid: "#c8930a", border: "rgba(200,147,10,0.30)", soft: "rgba(200,147,10,0.07)" },
   completed: { solid: "#1f9d5c", border: "rgba(31,157,92,0.30)", soft: "rgba(31,157,92,0.07)" },
+  canThanhToan: { solid: "#d9534f", border: "rgba(217,83,79,0.30)", soft: "rgba(217,83,79,0.07)" },
   daNhan: { solid: "#2f6fed", border: "rgba(47,111,237,0.30)", soft: "rgba(47,111,237,0.07)" },
 };
 
-// Bảng tổng hợp GỐC cố định phía trên ô tìm kiếm (chỉ để xem, không bấm lọc
-// được) — Vàng Rơi nổi bật màu hổ phách, 3 ô gốc + Cần thanh toán/Đã nhận
-// dùng tông nhạt hơn để không lấn át các ô lọc bên dưới.
-const VANG_ROI_COLOR = { solid: "#b8860b", border: "rgba(184,134,11,0.35)", soft: "rgba(184,134,11,0.10)" };
+// Bảng tổng hợp GỐC hiển thị phía trên (Hoa hồng chưa trừ thuế phí) — Cần
+// thanh toán/Đã nhận dùng tông nhạt hơn để không lấn át các ô lọc bên dưới.
+// Màu của ô "Chiến lợi phẩm của tôi" nằm riêng trong globals.css (loot-box-*).
 const GROSS_STAT_COLORS = {
   grossTongHH: { solid: "#0ecb81", border: "rgba(14,203,129,0.30)", soft: "rgba(14,203,129,0.06)" },
   grossPending: { solid: "#c8930a", border: "rgba(200,147,10,0.30)", soft: "rgba(200,147,10,0.06)" },
@@ -330,6 +330,8 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
       }
       // Tổng HH = tổng của 3 ô: Đang chờ xử lý + Đã hoàn thành + Đã nhận.
       stat.tongHH = stat.pending + stat.completed + stat.daNhan;
+      // Cần thanh toán (riêng theo sub ID) = Đã hoàn thành thực nhận - Đã nhận.
+      stat.canThanhToan = stat.completed - stat.daNhan;
       // `orders` gốc đã được sắp xếp mới nhất trước, nên đơn đầu tiên gặp
       // trong mỗi nhóm là đơn mới nhất và đơn cuối cùng là đơn cũ nhất.
       const latestOrderedAt = list[0]?.orderedAt || "";
@@ -539,73 +541,77 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
           </div>
         </div>
 
-        {/* Ô tìm kiếm + 3 ô lọc/tổng hợp + 4 ô sắp xếp — dính lại phía trên
-            khi cuộn trang xuống, không bị trôi mất. */}
-        <div className="sticky top-0 z-30 -mx-4 px-4 pt-2 pb-2 sm:mx-0 sm:px-0 sticky-blur-bg-green flex flex-col gap-2 mb-4">
-          {/* Bảng tổng hợp GỐC (chưa trừ 11% thuế, chưa chia 8-2) — chỉ để
-              xem, không bấm lọc được. Nằm phía trên ô tìm kiếm, cùng dính
-              cố định khi cuộn. */}
-          <div className="bg-panel border border-border rounded-2xl p-2 flex flex-col gap-1.5">
+        {/* Ô "Chiến lợi phẩm của tôi" — nổi bật riêng 1 ô, long lanh lấp
+            lánh/đẳng cấp hơn Vàng Rơi cũ. KHÔNG dính khi cuộn trang, để
+            trôi lên như nội dung bình thường. */}
+        <div className="loot-box-frame loot-box-shine mb-3">
+          <div className="loot-box-frame-inner text-center">
+            <p className="loot-box-label text-[11px] font-bold tracking-wide">✨ Chiến lợi phẩm của tôi</p>
+            <p className="loot-box-amount font-mono-num text-xl font-extrabold">
+              {formatVnd(grossTotals.vangRoi)}
+            </p>
+          </div>
+        </div>
+
+        {/* Hoa hồng chưa trừ thuế phí (GỐC, chưa trừ 11% thuế, chưa chia
+            8-2) — chỉ để xem, không bấm lọc được. KHÔNG dính khi cuộn
+            trang, để trôi lên cùng ô Chiến lợi phẩm bên trên. */}
+        <div className="bg-panel border border-border rounded-2xl p-2 flex flex-col gap-1.5 mb-4">
+          <p className="text-[11px] font-bold text-muted text-center">Hoa hồng chưa trừ thuế phí</p>
+          <div className="grid grid-cols-3 gap-1">
             <div
-              className="rounded-xl py-2 px-2 text-center"
-              style={{ background: VANG_ROI_COLOR.soft, border: `1px solid ${VANG_ROI_COLOR.border}` }}
+              className="text-center rounded-lg py-1 px-0.5"
+              style={{ border: `1px solid ${GROSS_STAT_COLORS.grossTongHH.border}`, background: GROSS_STAT_COLORS.grossTongHH.soft }}
             >
-              <p className="text-[11px] font-bold text-ink">🪙 Vàng Rơi</p>
-              <p className="font-mono-num text-base font-extrabold" style={{ color: VANG_ROI_COLOR.solid }}>
-                {formatVnd(grossTotals.vangRoi)}
+              <p className="text-[8.5px] leading-tight text-ink font-semibold">Tổng HH</p>
+              <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.grossTongHH.solid }}>
+                {formatVnd(grossTotals.grossTongHH)}
               </p>
             </div>
-            <div className="grid grid-cols-3 gap-1">
-              <div
-                className="text-center rounded-lg py-1 px-0.5"
-                style={{ border: `1px solid ${GROSS_STAT_COLORS.grossTongHH.border}`, background: GROSS_STAT_COLORS.grossTongHH.soft }}
-              >
-                <p className="text-[8.5px] leading-tight text-ink font-semibold">Tổng HH</p>
-                <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.grossTongHH.solid }}>
-                  {formatVnd(grossTotals.grossTongHH)}
-                </p>
-              </div>
-              <div
-                className="text-center rounded-lg py-1 px-0.5"
-                style={{ border: `1px solid ${GROSS_STAT_COLORS.grossPending.border}`, background: GROSS_STAT_COLORS.grossPending.soft }}
-              >
-                <p className="text-[8.5px] leading-tight text-ink font-semibold">Đang chờ xử lý</p>
-                <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.grossPending.solid }}>
-                  {formatVnd(grossTotals.grossPending)}
-                </p>
-              </div>
-              <div
-                className="text-center rounded-lg py-1 px-0.5"
-                style={{ border: `1px solid ${GROSS_STAT_COLORS.grossCompleted.border}`, background: GROSS_STAT_COLORS.grossCompleted.soft }}
-              >
-                <p className="text-[8.5px] leading-tight text-ink font-semibold">Đã hoàn thành</p>
-                <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.grossCompleted.solid }}>
-                  {formatVnd(grossTotals.grossCompleted)}
-                </p>
-              </div>
+            <div
+              className="text-center rounded-lg py-1 px-0.5"
+              style={{ border: `1px solid ${GROSS_STAT_COLORS.grossPending.border}`, background: GROSS_STAT_COLORS.grossPending.soft }}
+            >
+              <p className="text-[8.5px] leading-tight text-ink font-semibold">Đang chờ xử lý</p>
+              <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.grossPending.solid }}>
+                {formatVnd(grossTotals.grossPending)}
+              </p>
             </div>
-            <div className="grid grid-cols-2 gap-1">
-              <div
-                className="text-center rounded-lg py-1 px-0.5"
-                style={{ border: `1px solid ${GROSS_STAT_COLORS.canThanhToan.border}`, background: GROSS_STAT_COLORS.canThanhToan.soft }}
-              >
-                <p className="text-[8.5px] leading-tight text-ink font-semibold">Cần thanh toán</p>
-                <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.canThanhToan.solid }}>
-                  {formatVnd(grossTotals.canThanhToan)}
-                </p>
-              </div>
-              <div
-                className="text-center rounded-lg py-1 px-0.5"
-                style={{ border: `1px solid ${GROSS_STAT_COLORS.daNhan.border}`, background: GROSS_STAT_COLORS.daNhan.soft }}
-              >
-                <p className="text-[8.5px] leading-tight text-ink font-semibold">Đã nhận</p>
-                <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.daNhan.solid }}>
-                  {formatVnd(filterTotals.daNhan)}
-                </p>
-              </div>
+            <div
+              className="text-center rounded-lg py-1 px-0.5"
+              style={{ border: `1px solid ${GROSS_STAT_COLORS.grossCompleted.border}`, background: GROSS_STAT_COLORS.grossCompleted.soft }}
+            >
+              <p className="text-[8.5px] leading-tight text-ink font-semibold">Đã hoàn thành</p>
+              <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.grossCompleted.solid }}>
+                {formatVnd(grossTotals.grossCompleted)}
+              </p>
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-1">
+            <div
+              className="text-center rounded-lg py-1 px-0.5"
+              style={{ border: `1px solid ${GROSS_STAT_COLORS.canThanhToan.border}`, background: GROSS_STAT_COLORS.canThanhToan.soft }}
+            >
+              <p className="text-[8.5px] leading-tight text-ink font-semibold">Cần thanh toán</p>
+              <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.canThanhToan.solid }}>
+                {formatVnd(grossTotals.canThanhToan)}
+              </p>
+            </div>
+            <div
+              className="text-center rounded-lg py-1 px-0.5"
+              style={{ border: `1px solid ${GROSS_STAT_COLORS.daNhan.border}`, background: GROSS_STAT_COLORS.daNhan.soft }}
+            >
+              <p className="text-[8.5px] leading-tight text-ink font-semibold">Đã nhận</p>
+              <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROSS_STAT_COLORS.daNhan.solid }}>
+                {formatVnd(filterTotals.daNhan)}
+              </p>
+            </div>
+          </div>
+        </div>
 
+        {/* Ô tìm kiếm + 4 ô lọc + 4 ô sắp xếp — dính lại phía trên
+            khi cuộn trang xuống, không bị trôi mất. */}
+        <div className="sticky top-0 z-30 -mx-4 px-4 pt-2 pb-2 sm:mx-0 sm:px-0 sticky-blur-bg-green flex flex-col gap-2 mb-4">
           <div className="relative flex items-center bg-surface border border-border rounded-full">
             <input
               type="text"
@@ -745,7 +751,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
                       )}
                     </div>
 
-                    <div className="grid grid-cols-4 gap-1 mt-3">
+                    <div className="grid grid-cols-3 gap-1 mt-3">
                       <div
                         className="text-center rounded-lg py-1 px-0.5"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.tongHH.border}`, background: GROUP_STAT_COLORS.tongHH.soft }}
@@ -771,6 +777,17 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
                         <p className="text-[8.5px] leading-tight text-ink font-semibold">Đã hoàn thành</p>
                         <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROUP_STAT_COLORS.completed.solid }}>
                           {formatVnd(group.stat.completed)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 mt-1">
+                      <div
+                        className="text-center rounded-lg py-1 px-0.5"
+                        style={{ border: `1px solid ${GROUP_STAT_COLORS.canThanhToan.border}`, background: GROUP_STAT_COLORS.canThanhToan.soft }}
+                      >
+                        <p className="text-[8.5px] leading-tight text-ink font-semibold">Cần thanh toán</p>
+                        <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROUP_STAT_COLORS.canThanhToan.solid }}>
+                          {formatVnd(group.stat.canThanhToan)}
                         </p>
                       </div>
                       <div

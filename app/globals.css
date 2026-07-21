@@ -581,3 +581,55 @@ body {
 .music-avatar-ring.is-playing {
   animation-play-state: running;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Ô "Chiến lợi phẩm của tôi" (trang Admin) — thay cho "Vàng Rơi" cũ,
+   tách riêng 1 ô nổi bật, viền vàng kim chạy sáng long lanh + hiệu ứng
+   quét sáng chéo (shine sweep) qua bề mặt, nhìn sang trọng/đẳng cấp hơn.
+   ───────────────────────────────────────────────────────────── */
+.loot-box-frame {
+  position: relative;
+  padding: 2.5px;
+  border-radius: 20px;
+  background: linear-gradient(115deg, #7a5a12, #ffe08a, #b8860b, #fff6d8, #b8860b, #ffe08a, #7a5a12);
+  background-size: 300% 100%;
+  animation: loot-shimmer 5s linear infinite;
+  box-shadow: 0 6px 22px rgba(184, 134, 11, 0.35);
+}
+@keyframes loot-shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+.loot-box-frame-inner {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  padding: 12px 14px;
+  background: linear-gradient(160deg, #241a06, #3a2a0a 55%, #241a06);
+}
+.loot-box-shine .loot-box-frame-inner::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -160%;
+  width: 55%;
+  height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(255, 245, 210, 0.45), transparent);
+  transform: skewX(-20deg);
+  animation: loot-shine-sweep 3.4s ease-in-out infinite;
+}
+@keyframes loot-shine-sweep {
+  0% { left: -160%; }
+  55%, 100% { left: 160%; }
+}
+.loot-box-label {
+  position: relative;
+  color: #ffe9ad;
+  text-shadow: 0 0 10px rgba(255, 224, 138, 0.5);
+}
+.loot-box-amount {
+  position: relative;
+  color: #ffd76a;
+  text-shadow: 0 0 14px rgba(255, 215, 106, 0.55);
+}
+
