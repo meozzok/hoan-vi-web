@@ -377,9 +377,10 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
   // Bảng tổng hợp "Hoa hồng chưa trừ thuế phí" cố định phía trên — số liệu
   // GỐC (chưa trừ 11% thuế, chưa chia 8-2), tính trên toàn bộ danh sách đã
   // qua tìm kiếm, không phụ thuộc ô lọc đang chọn. "Vàng Rơi"/"Chiến lợi
-  // phẩm của tôi" = phần hoa hồng bị mất đi giữa Tổng HH gốc và Tổng HH
-  // thực nhận (sau thuế + chia 8-2) — tính trên CẢ Đang chờ xử lý lẫn Đã
-  // hoàn thành, không chỉ riêng đơn đã hoàn thành.
+  // phẩm của tôi" = lấy Tổng HH gốc trừ 11% thuế phí TRƯỚC (khoản thuế này
+  // không tính vào phần bị mất, vì vốn không được nhận), sau đó mới trừ tiếp
+  // Tổng HH thực nhận bên dưới (sau thuế + chia 8-2) — tính trên CẢ Đang chờ
+  // xử lý lẫn Đã hoàn thành, không chỉ riêng đơn đã hoàn thành.
   const grossTotals = useMemo(() => {
     const acc = searchedGroups.reduce(
       (a, g) => ({
@@ -389,11 +390,14 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
       { grossPending: 0, grossCompleted: 0 }
     );
     const grossTongHH = acc.grossPending + acc.grossCompleted;
+    // Trừ 11% thuế phí trước (khoản này không được nhận nên không tính là
+    // "Chiến lợi phẩm"), sau đó mới trừ tiếp Tổng HH thực nhận bên dưới.
+    const grossAfterTax = Math.round(grossTongHH * 0.89);
     return {
       grossPending: acc.grossPending,
       grossCompleted: acc.grossCompleted,
       grossTongHH,
-      vangRoi: grossTongHH - filterTotals.tongHH,
+      vangRoi: grossAfterTax - filterTotals.tongHH,
     };
   }, [searchedGroups, filterTotals]);
 
