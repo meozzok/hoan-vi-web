@@ -262,7 +262,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
   const [groupPage, setGroupPage] = useState(1);
   const [pageWindowStart, setPageWindowStart] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("total");
+  const [statusFilter, setStatusFilter] = useState(null);
   const [sortMode, setSortMode] = useState("newest");
   const [copiedKey, setCopiedKey] = useState(null);
   const saveTimers = useRef({});
@@ -350,12 +350,12 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
     );
   }, [searchedGroups]);
 
-  // Ô lọc: Đang chờ xử lý / Đã hoàn thành / Đã nhận chỉ hiện các sub ID có
-  // phát sinh hoa hồng (hoặc tiền đã nhận) tương ứng; Hoàn thành chia 8-2
-  // hiện tất cả.
+  // Ô lọc: mỗi ô chỉ hiện các sub ID có phát sinh số tiền tương ứng > 0;
+  // khi không chọn ô nào (statusFilter = null) thì hiện tất cả.
   const filteredGroups = useMemo(() => {
     if (statusFilter === "pending") return searchedGroups.filter((g) => g.stat.pending > 0);
     if (statusFilter === "completed") return searchedGroups.filter((g) => g.stat.completed > 0);
+    if (statusFilter === "total") return searchedGroups.filter((g) => g.stat.total > 0);
     if (statusFilter === "daNhan") return searchedGroups.filter((g) => g.stat.daNhan > 0);
     return searchedGroups;
   }, [searchedGroups, statusFilter]);
@@ -538,7 +538,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
                 <button
                   key={f.key}
                   type="button"
-                  onClick={() => setStatusFilter((prev) => (prev === f.key ? "total" : f.key))}
+                  onClick={() => setStatusFilter((prev) => (prev === f.key ? null : f.key))}
                   className="rounded-lg py-1 px-0.5 text-center transition-all cursor-pointer active:scale-95"
                   style={
                     active
