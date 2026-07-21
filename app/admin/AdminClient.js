@@ -538,7 +538,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames, initi
                 <button
                   key={f.key}
                   type="button"
-                  onClick={() => setStatusFilter(f.key)}
+                  onClick={() => setStatusFilter((prev) => (prev === f.key ? "total" : f.key))}
                   className="rounded-lg py-1 px-0.5 text-center transition-all cursor-pointer active:scale-95"
                   style={
                     active
