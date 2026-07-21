@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Tên khách được lưu ngay trên trình duyệt (localStorage) NGOÀI việc gửi
-// lên server — vì vậy gõ xong rồi tải lại trang (kể cả khi mạng chập chờn
-// hoặc request lưu lên server bị lỗi) tên vẫn còn nguyên trên máy admin.
+// Tên khách LƯU CHÍNH trên server (Upstash Redis, qua /api/admin/customer-names
+// -> lib/adminNames.js) — dùng được trên mọi thiết bị, không mất khi xóa dữ
+// liệu trình duyệt. localStorage ở đây chỉ là bản nháp tạm trên máy này,
+// để nếu gõ xong mà tải lại trang ngay lúc mạng chập chờn (trước khi kịp
+// lưu server) thì vẫn không mất chữ vừa gõ; xem thêm cờ saveErrorKeys.
 const LOCAL_NAMES_KEY = "hoanvi_admin_customer_names_v1";
 
 // Phân trang danh sách Sub ID — mỗi trang 10 sub ID, mỗi sub ID 1 dòng
@@ -18,6 +20,7 @@ const FILTER_OPTIONS = [
   { key: "pending", label: "Đang chờ xử lý" },
   { key: "completed", label: "Đã hoàn thành" },
   { key: "total", label: "Hoàn thành chia 8-2" },
+  { key: "daNhan", label: "Đã nhận" },
 ];
 
 // 4 ô sắp xếp danh sách sub ID.
@@ -98,11 +101,12 @@ const AMOUNT_COLORS = {
   final80: { solid: "#0ecb81", border: "rgba(47,158,99,0.25)", soft: "rgba(47,158,99,0.05)" },
 };
 
-// 3 ô hoa hồng theo trạng thái, hiển thị cho từng Sub ID.
+// 4 ô hoa hồng theo trạng thái, hiển thị cho từng Sub ID.
 const GROUP_STAT_COLORS = {
   pending: { solid: "#c8930a", border: "rgba(200,147,10,0.30)", soft: "rgba(200,147,10,0.07)" },
   completed: { solid: "#1f9d5c", border: "rgba(31,157,92,0.30)", soft: "rgba(31,157,92,0.07)" },
   total: { solid: "#0ecb81", border: "rgba(14,203,129,0.35)", soft: "rgba(14,203,129,0.08)" },
+  daNhan: { solid: "#2f6fed", border: "rgba(47,111,237,0.30)", soft: "rgba(47,111,237,0.07)" },
 };
 
 function SearchIcon({ className = "" }) {
@@ -246,12 +250,14 @@ function OrderRow({ order, searchQuery, copiedKey, onCopy }) {
   );
 }
 
-export default function AdminClient({ initialOrders, initialCustomerNames }) {
+export default function AdminClient({ initialOrders, initialCustomerNames, initialDaNhan }) {
   const router = useRouter();
   const [orders, setOrders] = useState(initialOrders || []);
   const [customerNames, setCustomerNames] = useState(initialCustomerNames || {});
+  const [daNhanMap, setDaNhanMap] = useState(initialDaNhan || {});
   const [refreshing, setRefreshing] = useState(false);
   const [savingKeys, setSavingKeys] = useState({});
+  const [saveErrorKeys, setSaveErrorKeys] = useState({});
   const [expanded, setExpanded] = useState({});
   const [groupPage, setGroupPage] = useState(1);
   const [pageWindowStart, setPageWindowStart] = useState(0);
@@ -294,7 +300,10 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
       map.get(order.subId).push(order);
     }
     return Array.from(map.entries()).map(([subId, list]) => {
-      const stat = { pending: 0, completed: 0, total: 0 };
+      // "Đã nhận" không tính từ danh sách đơn (donhang) — nó đến từ 1 nguồn
+      // dữ liệu riêng (danhan_by_subid) mà bot ghi mỗi khi Admin chuyển tiền
+      // thực tế cho khách, nên lấy thẳng từ daNhanMap theo sub ID.
+      const stat = { pending: 0, completed: 0, total: 0, daNhan: daNhanMap[subId] || 0 };
       for (const o of list) {
         const amount = o.final80 || 0;
         stat.total += amount;
@@ -308,7 +317,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
       const oldestOrderedAt = list[list.length - 1]?.orderedAt || "";
       return { subId, orders: list, stat, latestOrderedAt, oldestOrderedAt };
     });
-  }, [orders]);
+  }, [orders, daNhanMap]);
 
   // Lọc theo ô tìm kiếm — khớp theo Sub ID, tên khách, mã đơn hoặc tên sản phẩm.
   const searchedGroups = useMemo(() => {
@@ -334,16 +343,19 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
         pending: acc.pending + g.stat.pending,
         completed: acc.completed + g.stat.completed,
         total: acc.total + g.stat.total,
+        daNhan: acc.daNhan + g.stat.daNhan,
       }),
-      { pending: 0, completed: 0, total: 0 }
+      { pending: 0, completed: 0, total: 0, daNhan: 0 }
     );
   }, [searchedGroups]);
 
-  // Ô lọc: Đang chờ xử lý / Đã hoàn thành chỉ hiện các sub ID có phát sinh
-  // hoa hồng ở trạng thái tương ứng; Hoàn thành chia 8-2 hiện tất cả.
+  // Ô lọc: Đang chờ xử lý / Đã hoàn thành / Đã nhận chỉ hiện các sub ID có
+  // phát sinh hoa hồng (hoặc tiền đã nhận) tương ứng; Hoàn thành chia 8-2
+  // hiện tất cả.
   const filteredGroups = useMemo(() => {
     if (statusFilter === "pending") return searchedGroups.filter((g) => g.stat.pending > 0);
     if (statusFilter === "completed") return searchedGroups.filter((g) => g.stat.completed > 0);
+    if (statusFilter === "daNhan") return searchedGroups.filter((g) => g.stat.daNhan > 0);
     return searchedGroups;
   }, [searchedGroups, statusFilter]);
 
@@ -387,14 +399,25 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
 
   const persistName = useCallback(async (subId, name) => {
     setSavingKeys((s) => ({ ...s, [subId]: true }));
+    setSaveErrorKeys((s) => {
+      if (!s[subId]) return s;
+      const next = { ...s };
+      delete next[subId];
+      return next;
+    });
     try {
-      await fetch("/api/admin/customer-names", {
+      const res = await fetch("/api/admin/customer-names", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subId, name }),
       });
+      if (!res.ok) throw new Error("Lưu tên thất bại");
     } catch {
-      // Bỏ qua lỗi mạng — tên vẫn còn trong localStorage nên không mất.
+      // Lưu lên server thất bại (mạng lỗi/server lỗi) — tên vẫn còn tạm
+      // trong localStorage của trình duyệt này nên chưa mất ngay, nhưng
+      // CHƯA chắc đã lưu vĩnh viễn trên server. Đánh dấu lỗi để báo cho
+      // Admin biết, gõ lại (hoặc bấm Làm mới sau khi mạng ổn) sẽ tự thử lưu lại.
+      setSaveErrorKeys((s) => ({ ...s, [subId]: true }));
     } finally {
       setSavingKeys((s) => {
         const next = { ...s };
@@ -430,6 +453,7 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
         // Ưu tiên tên đã lưu trên trình duyệt (mới nhất) đè lên tên từ server,
         // phòng khi có tên vừa gõ mà server chưa kịp lưu xong.
         setCustomerNames({ ...(data.customerNames || {}), ...readLocalNames() });
+        setDaNhanMap(data.daNhan || {});
       }
     } finally {
       setRefreshing(false);
@@ -504,27 +528,26 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-4 gap-1">
             {FILTER_OPTIONS.map((f) => {
               const active = statusFilter === f.key;
               const colors = GROUP_STAT_COLORS[f.key];
-              const amount =
-                f.key === "pending" ? filterTotals.pending : f.key === "completed" ? filterTotals.completed : filterTotals.total;
+              const amount = filterTotals[f.key];
               return (
                 <button
                   key={f.key}
                   type="button"
                   onClick={() => setStatusFilter(f.key)}
-                  className="rounded-xl py-1.5 text-center transition-all cursor-pointer active:scale-95"
+                  className="rounded-lg py-1 px-0.5 text-center transition-all cursor-pointer active:scale-95"
                   style={
                     active
                       ? { background: colors.solid, boxShadow: `0 3px 10px ${colors.soft}` }
                       : { background: colors.soft, border: `1px solid ${colors.border}` }
                   }
                 >
-                  <p className={`text-[10px] font-semibold ${active ? "text-white/90" : "text-ink"}`}>{f.label}</p>
+                  <p className={`text-[8.5px] leading-tight font-semibold ${active ? "text-white/90" : "text-ink"}`}>{f.label}</p>
                   <p
-                    className="font-mono-num text-xs font-bold"
+                    className="font-mono-num text-[10.5px] leading-tight font-bold"
                     style={{ color: active ? "#fff" : colors.solid }}
                   >
                     {formatVnd(amount)}
@@ -605,34 +628,48 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
                         placeholder="Tự nhập tên khách..."
                         className="w-full bg-surface border border-border rounded-lg px-3 py-1.5 text-sm text-cream placeholder:text-muted/60 outline-none focus:border-gold transition-colors"
                       />
+                      {saveErrorKeys[group.subId] && (
+                        <p className="text-[11px] text-danger mt-1">
+                          ⚠ Chưa lưu được lên server, sẽ tự thử lại khi bạn gõ tiếp hoặc bấm &quot;Làm mới&quot;.
+                        </p>
+                      )}
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5 mt-3">
+                    <div className="grid grid-cols-4 gap-1 mt-3">
                       <div
-                        className="text-center rounded-lg py-1.5"
+                        className="text-center rounded-lg py-1 px-0.5"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.pending.border}`, background: GROUP_STAT_COLORS.pending.soft }}
                       >
-                        <p className="text-[10px] text-ink font-semibold">Đang chờ xử lý</p>
-                        <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.pending.solid }}>
+                        <p className="text-[8.5px] leading-tight text-ink font-semibold">Đang chờ xử lý</p>
+                        <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROUP_STAT_COLORS.pending.solid }}>
                           {formatVnd(group.stat.pending)}
                         </p>
                       </div>
                       <div
-                        className="text-center rounded-lg py-1.5"
+                        className="text-center rounded-lg py-1 px-0.5"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.completed.border}`, background: GROUP_STAT_COLORS.completed.soft }}
                       >
-                        <p className="text-[10px] text-ink font-semibold">Đã hoàn thành</p>
-                        <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.completed.solid }}>
+                        <p className="text-[8.5px] leading-tight text-ink font-semibold">Đã hoàn thành</p>
+                        <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROUP_STAT_COLORS.completed.solid }}>
                           {formatVnd(group.stat.completed)}
                         </p>
                       </div>
                       <div
-                        className="text-center rounded-lg py-1.5"
+                        className="text-center rounded-lg py-1 px-0.5"
                         style={{ border: `1px solid ${GROUP_STAT_COLORS.total.border}`, background: GROUP_STAT_COLORS.total.soft }}
                       >
-                        <p className="text-[10px] text-ink font-semibold">Hoàn thành chia 8-2</p>
-                        <p className="font-mono-num text-sm font-bold" style={{ color: GROUP_STAT_COLORS.total.solid }}>
+                        <p className="text-[8.5px] leading-tight text-ink font-semibold">Hoàn thành chia 8-2</p>
+                        <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROUP_STAT_COLORS.total.solid }}>
                           {formatVnd(group.stat.total)}
+                        </p>
+                      </div>
+                      <div
+                        className="text-center rounded-lg py-1 px-0.5"
+                        style={{ border: `1px solid ${GROUP_STAT_COLORS.daNhan.border}`, background: GROUP_STAT_COLORS.daNhan.soft }}
+                      >
+                        <p className="text-[8.5px] leading-tight text-ink font-semibold">Đã nhận</p>
+                        <p className="font-mono-num text-[10.5px] leading-tight font-bold" style={{ color: GROUP_STAT_COLORS.daNhan.solid }}>
+                          {formatVnd(group.stat.daNhan)}
                         </p>
                       </div>
                     </div>
@@ -707,7 +744,9 @@ export default function AdminClient({ initialOrders, initialCustomerNames }) {
         <p className="text-muted text-xs mt-3">
           {Object.keys(savingKeys).length > 0
             ? "Đang lưu tên khách..."
-            : "Tên khách tự lưu theo Sub ID ngay trên trình duyệt này khi bạn ngừng gõ — lần sau đơn mới của cùng khách sẽ tự có sẵn tên."}
+            : Object.keys(saveErrorKeys).length > 0
+            ? "Có tên chưa lưu được lên server — xem cảnh báo ⚠ bên dưới từng ô."
+            : "Tên khách tự lưu theo Sub ID lên server khi bạn ngừng gõ (không chỉ trên máy này) — dùng được trên mọi thiết bị, không mất khi xóa trình duyệt."}
         </p>
       </div>
     </main>
